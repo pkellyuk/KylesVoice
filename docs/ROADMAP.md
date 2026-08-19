@@ -57,7 +57,7 @@ Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
       lockout and dwell. 77 tests, including replay of the real captures in
       `docs/captures/`. Calibration constants still to be set from Kyle's own
       data.
-- [x] Wire the resolver into a Flutter widget layer and verify on device —
+- [x] Wire the resolver into a Flutter widget layer and verify on device â€”
       `app/`. Renders the fixed grid with empty cells preserved, feeds real
       pointer geometry through the coalescer and resolver, speaks through the
       platform engine, and carries a parent-gated diagnostics overlay.
