@@ -68,8 +68,11 @@ Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
 - [ ] Speak-on-tap with platform TTS; voice, rate, pitch selection.
 - [ ] Card model with photo, label and independent spoken text.
 - [ ] Photo capture from camera into a card.
-- [ ] Parent-gated editor: add, edit, position, hide, delete cards.
-- [ ] Local persistence (SQLite plus media on disk).
+- [x] Parent-gated editor: add, edit and remove cards, change grid size with
+      an explicit warning naming what would be lost, one-level undo.
+- [x] Local persistence — atomic JSON writes with an automatic backup and
+      salvaging decode. Supersedes the SQLite sketch; see `DATA-MODEL.md`.
+      Verified on device: a card added in the editor survives a force-stop.
 - [ ] Low-stimulation theme; press feedback with haptics.
 - [ ] Home/back navigation and folder cards.
 

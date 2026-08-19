@@ -44,6 +44,11 @@ dependencies:
   # SDK: the primary target is a Fire tablet, where Play Services may be absent.
   flutter_tts: ^4.2.0
 
+  # Locates the per-app documents directory the board is stored in. The
+  # repository itself takes a directory, so this is the only place that needs
+  # the platform.
+  path_provider: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

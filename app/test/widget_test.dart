@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
 import 'package:kylesvoice/board/board_surface.dart';
-import 'package:kylesvoice/model/board.dart';
 
 /// Counter giving each pumped board a distinct key.
 ///

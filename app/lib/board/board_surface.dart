@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
 import '../log.dart';
-import '../model/board.dart';
 import 'card_tile.dart';
 
 /// Everything the diagnostics overlay needs to explain one activation.

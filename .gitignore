@@ -34,5 +34,5 @@ tools/touch_spike/emulator_capture.png
 !docs/captures/*.csv
 
 # App build output
-app/board_*.png
+app/*.png
 tools/touch_spike/*.png

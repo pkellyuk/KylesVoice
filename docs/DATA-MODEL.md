@@ -1,5 +1,11 @@
 # Kyle's Voice — Data Model
 
+> **Status.** The relational sketch below was written before the data volume
+> was clear. It has been superseded in the implementation by a single JSON
+> document per board, written atomically. See "Why JSON, not SQLite" at the end
+> of this file. The entity descriptions remain the reference for what a board
+> set contains; only the storage mechanism changed.
+
 ## Design constraints
 
 1. **Cell position is identity.** A card's grid position is durable data, not a
@@ -161,3 +167,34 @@ Expected lossy edges on OBF export, to be documented in the exporter:
 
 Import should accept `.obz` from other AAC tools, mapping unknown extensions to
 defaults rather than failing.
+
+
+---
+
+## Why JSON, not SQLite
+
+The implementation in `packages/kylesvoice_core/lib/src/store/` stores a board as
+one JSON document rather than in a relational schema. The reasoning, recorded
+here because the sketch above says otherwise:
+
+- **The data is tiny.** A board is a few dozen cards. There is nothing to gain
+  from partial updates or indexed queries.
+- **It is the same representation used for export.** The `.kvz` interchange
+  format is zipped JSON, so a single representation serves both storage and
+  home-to-school transfer. Two representations would be two things to keep in
+  step on the path between a child and their voice.
+- **A whole-document write is atomic.** Content goes to a temporary file, is
+  flushed, and is then renamed over the target. A rename either happens or does
+  not, so a device dying mid-write — which this one will, since it gets thrown —
+  cannot leave a half-written board.
+- **It can be repaired by hand.** A parent or therapist who has lost something
+  can open the file in a text editor. A corrupt SQLite database needs tooling.
+
+Decoding is deliberately salvaging: a single malformed card is dropped and
+reported rather than failing the whole board, and a damaged main file falls back
+to an automatically kept backup. Losing one card is bad; losing a vocabulary
+built over months is unforgivable.
+
+If media files (photographs, recorded audio) later make the document unwieldy,
+the natural step is a directory per board set — JSON manifest plus media files —
+not a relational database.

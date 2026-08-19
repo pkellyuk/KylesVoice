@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../model/board.dart';
+import 'package:kylesvoice_core/kylesvoice_core.dart';
 
 /// One cell, occupied or empty.
 ///
@@ -52,8 +51,8 @@ class CardTile extends StatelessWidget {
       duration: const Duration(milliseconds: 90),
       decoration: BoxDecoration(
         color: isFlashing
-            ? Color.lerp(resolved.colour, Colors.white, 0.45)
-            : resolved.colour,
+            ? Color.lerp(Color(resolved.colourArgb), Colors.white, 0.45)
+            : Color(resolved.colourArgb),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isFlashing ? Colors.white : const Color(0x22000000),
