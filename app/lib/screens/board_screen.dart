@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
@@ -27,6 +29,13 @@ class _BoardScreenState extends State<BoardScreen> {
   final ResolverConfig _config = ResolverConfig.kyle;
 
   Board _board = Board.kyleStarter;
+
+  int _page = 0;
+
+  /// Briefly false after a page change, so a hand still travelling from the
+  /// gesture that turned the page cannot immediately fire a card on the new one.
+  bool _surfaceEnabled = true;
+  Timer? _reenableTimer;
 
   bool _loading = true;
   bool _showDiagnostics = false;
@@ -63,13 +72,14 @@ class _BoardScreenState extends State<BoardScreen> {
 
     setState(() {
       _board = result.board;
+      _page = result.board.clampPage(_page);
       _loading = false;
       _loadProblems = result.problems;
     });
 
     Log.exit(
       '_BoardScreenState._restore',
-      'restored=${result.wasRestored} cards=${result.board.cards.length}',
+      'restored=${result.wasRestored} cards=${result.board.totalCards}',
     );
   }
 
@@ -86,6 +96,61 @@ class _BoardScreenState extends State<BoardScreen> {
       '_BoardScreenState._onActivated',
       'spoke "${card.effectiveSpeech}"',
     );
+  }
+
+  /// Moves to another page.
+  ///
+  /// The board is deaf for a moment afterwards: whatever turned the page, the
+  /// hand is still moving, and a card firing under it would be a word the user
+  /// did not choose.
+  void _goToPage(int index) {
+    Log.enter('_BoardScreenState._goToPage', 'from=$_page to=$index');
+
+    final int target = _board.clampPage(index);
+
+    if (target == _page) {
+      Log.exit('_BoardScreenState._goToPage', 'already there');
+      return;
+    }
+
+    _reenableTimer?.cancel();
+
+    setState(() {
+      _page = target;
+      _surfaceEnabled = false;
+    });
+
+    _reenableTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted == false) {
+        return;
+      }
+
+      setState(() {
+        _surfaceEnabled = true;
+      });
+    });
+
+    Log.exit(
+      '_BoardScreenState._goToPage',
+      'page=$_page of ${_board.pageCount}',
+    );
+  }
+
+  void _onSwipe(DragEndDetails details) {
+    if (_config.swipeToChangePage == false) {
+      return;
+    }
+
+    final double velocity = details.primaryVelocity ?? 0;
+
+    // A deliberate flick, not a drift. The threshold is high on purpose.
+    if (velocity.abs() < 600) {
+      return;
+    }
+
+    Log.step('_BoardScreenState._onSwipe', 'velocity=$velocity');
+
+    _goToPage(velocity < 0 ? _page + 1 : _page - 1);
   }
 
   void _onResolved(ActivationReport report) {
@@ -208,6 +273,12 @@ class _BoardScreenState extends State<BoardScreen> {
   }
 
   @override
+  void dispose() {
+    _reenableTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
@@ -221,17 +292,7 @@ class _BoardScreenState extends State<BoardScreen> {
       body: SafeArea(
         child: Stack(
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: BoardSurface(
-                board: _board,
-                config: _config,
-                onActivated: _onActivated,
-                onResolved: _onResolved,
-                showGridLines: _showDiagnostics,
-                mediaDirectory: _storage.mediaDirectory,
-              ),
-            ),
+            _buildBoardArea(),
             // The parent gate lives in a corner with no visible affordance, so
             // the child cannot wander into it.
             Positioned(
@@ -250,6 +311,87 @@ class _BoardScreenState extends State<BoardScreen> {
               Positioned(left: 8, bottom: 8, right: 8, child: _buildProblems()),
           ],
         ),
+      ),
+    );
+  }
+
+  /// The board, with a reserved strip either side for the page arrows.
+  ///
+  /// The strips are always present, even on a one-page board where the arrows
+  /// do nothing. That is deliberate: if they appeared only when a second page
+  /// was added, adding a page would narrow the grid and shift every card, which
+  /// is precisely the motor-planning failure the whole design exists to
+  /// prevent. The space is reserved from the first day so nothing ever moves.
+  Widget _buildBoardArea() {
+    final Widget board = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: BoardSurface(
+        board: _board,
+        pageIndex: _page,
+        enabled: _surfaceEnabled,
+        config: _config,
+        onActivated: _onActivated,
+        onResolved: _onResolved,
+        showGridLines: _showDiagnostics,
+        mediaDirectory: _storage.mediaDirectory,
+      ),
+    );
+
+    return Row(
+      children: <Widget>[
+        _buildPageArrow(forward: false),
+        Expanded(
+          child: _config.swipeToChangePage
+              ? GestureDetector(
+                  onHorizontalDragEnd: _onSwipe,
+                  behavior: HitTestBehavior.translucent,
+                  child: board,
+                )
+              : board,
+        ),
+        _buildPageArrow(forward: true),
+      ],
+    );
+  }
+
+  Widget _buildPageArrow({required bool forward}) {
+    final bool canGo = forward ? _page < _board.pageCount - 1 : _page > 0;
+
+    return SizedBox(
+      width: 58,
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: Center(
+              child: IconButton(
+                iconSize: 34,
+                onPressed: canGo
+                    ? () => _goToPage(forward ? _page + 1 : _page - 1)
+                    : null,
+                icon: Icon(forward ? Icons.chevron_right : Icons.chevron_left),
+                color: Colors.white70,
+                disabledColor: const Color(0x14FFFFFF),
+                tooltip: forward ? 'Next page' : 'Previous page',
+              ),
+            ),
+          ),
+          // The page number sits in the left strip, which is already reserved,
+          // rather than in a bar of its own that would cost more board height.
+          if (forward == false)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(
+                '${_page + 1}/${_board.pageCount}',
+                style: TextStyle(
+                  color: _board.pageCount > 1
+                      ? Colors.white54
+                      : const Color(0x22FFFFFF),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          if (forward) const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -318,8 +460,10 @@ class _BoardScreenState extends State<BoardScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          _row('Board', '${_board.name} (${_board.cards.length} cards)'),
+          _row('Board', '${_board.name} (${_board.totalCards} cards)'),
           _row('Grid', '${_board.rows} x ${_board.cols}'),
+          _row('Page', '${_page + 1} of ${_board.pageCount}'),
+          _row('Swipe paging', _config.swipeToChangePage ? 'on' : 'off'),
           _row('Touch mode', _config.mode.name),
           _row('Coalesce', '${_config.coalesceWindowMillis} ms'),
           _row('Lockout', '${_config.lockoutMillis} ms'),

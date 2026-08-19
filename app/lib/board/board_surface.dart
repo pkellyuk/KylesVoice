@@ -31,6 +31,17 @@ class ActivationReport {
 /// firing its own card.
 class BoardSurface extends StatefulWidget {
   final Board board;
+
+  /// Which page of the board to show and resolve against.
+  final int pageIndex;
+
+  /// When false, touches are ignored entirely.
+  ///
+  /// Used for a moment after a page change, so a hand still travelling from the
+  /// gesture that turned the page cannot immediately fire a card on the new
+  /// one.
+  final bool enabled;
+
   final ResolverConfig config;
 
   /// Called when a card is activated, with the phrase to speak.
@@ -50,6 +61,8 @@ class BoardSurface extends StatefulWidget {
     super.key,
     required this.board,
     required this.config,
+    this.pageIndex = 0,
+    this.enabled = true,
     required this.onActivated,
     this.onResolved,
     this.showGridLines = false,
@@ -103,6 +116,13 @@ class _BoardSurfaceState extends State<BoardSurface> {
       );
     }
 
+    if (oldWidget.pageIndex != widget.pageIndex) {
+      Log.step('_BoardSurfaceState.didUpdateWidget', 'page changed, resetting');
+      _resolver.reset();
+      _coalescer.reset();
+      _coalesceTimer?.cancel();
+    }
+
     if (oldWidget.board != widget.board) {
       Log.step(
         '_BoardSurfaceState.didUpdateWidget',
@@ -129,6 +149,11 @@ class _BoardSurfaceState extends State<BoardSurface> {
   /// logging here distorts the timings the resolver depends on.
   void _onPointerDown(PointerDownEvent? event) {
     if (event == null) {
+      return;
+    }
+
+    if (widget.enabled == false) {
+      Log.hot('_BoardSurfaceState._onPointerDown', 'ignored: surface disabled');
       return;
     }
 
@@ -214,7 +239,10 @@ class _BoardSurfaceState extends State<BoardSurface> {
       timestampMillis: composite.firstTimestampMillis,
     );
 
-    final BoardCard? card = widget.board.cardAt(resolution.cell);
+    final BoardCard? card = widget.board.cardAt(
+      page: widget.pageIndex,
+      address: resolution.cell,
+    );
 
     Log.step(
       '_BoardSurfaceState._resolveComposite',
@@ -304,7 +332,10 @@ class _BoardSurfaceState extends State<BoardSurface> {
     final List<Widget> children = <Widget>[];
 
     for (final PositionedCell cell in grid.allCells()) {
-      final BoardCard? card = widget.board.cardAt(cell.address);
+      final BoardCard? card = widget.board.cardAt(
+        page: widget.pageIndex,
+        address: cell.address,
+      );
 
       children.add(
         Positioned(

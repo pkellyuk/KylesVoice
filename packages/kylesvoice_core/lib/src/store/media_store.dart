@@ -151,10 +151,19 @@ class MediaStore {
       return 0;
     }
 
-    final Set<String> referenced = board.cards
-        .where((BoardCard c) => c.hasPhoto)
-        .map((BoardCard c) => c.photoFile.trim())
-        .toSet();
+    // Every page, not just the visible one: a photograph referenced on page
+    // three is still in use.
+    final Set<String> referenced = <String>{};
+
+    for (final BoardPage page in board.pages) {
+      for (final BoardCard card in page.cards) {
+        if (card.hasPhoto == false) {
+          continue;
+        }
+
+        referenced.add(card.photoFile.trim());
+      }
+    }
 
     int removed = 0;
 

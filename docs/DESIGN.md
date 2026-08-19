@@ -76,6 +76,28 @@ Configurable per profile:
 - Hideable entirely (Kyle's initial profile hides it).
 - Auto-clear after speaking: on/off.
 
+### 2.4a Pages
+
+A board is one or more pages, all sharing the same grid dimensions. This is how
+vocabulary grows once a page is full, and it is the reason the editor never
+needs to suggest resizing the grid.
+
+- **Nothing already placed moves when a page is added.** A card's position is
+  its identity within its page, so "bottom left on page one" stays exactly where
+  it was however many pages come after it.
+- **Paging is driven by fixed arrows** in reserved strips either side of the
+  grid, never by a gesture on the cards themselves.
+- **The strips are reserved from the first day**, even on a single-page board
+  where the arrows do nothing. If they appeared only when a second page was
+  added, adding a page would narrow the grid and shift every card — precisely
+  the motor-planning failure this design exists to prevent.
+- **Swipe paging exists but is off by default** (`swipeToChangePage`). A swipe
+  is a gesture, and a user who activates cards by slapping can produce one by
+  accident. Flipping the page mid-reach is worse than a single mis-hit, because
+  the next slap then lands on an entirely different word.
+- **The board is deaf for 350 ms after a page change**, so a hand still
+  travelling cannot fire a card on the page that has just arrived.
+
 ### 2.5 Navigation
 
 - **Home** button in a fixed corner, present on every page, never moves.
@@ -306,7 +328,8 @@ then Kyle's profile is set explicitly to `palm`.
 - **Large touch targets** and generous spacing. Tablet is the primary form
   factor; phone is supported but with a smaller target grid.
 - **No gestures required for core use.** No swipe, no pinch, no long-press in
-  child-facing mode. Gestures exist only in the editor.
+  child-facing mode. Gestures exist only in the editor, and in the optional
+  swipe paging described in 2.4a, which is off by default.
 - **Text labels are shown** even though Kyle cannot read. Incidental exposure to
   the written word alongside the image is standard practice and costs nothing.
   Label size, position (below / above / overlay) and visibility are configurable

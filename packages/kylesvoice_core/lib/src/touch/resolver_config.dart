@@ -74,6 +74,16 @@ class ResolverConfig {
   /// enough to merge two deliberate taps.
   final int coalesceWindowMillis;
 
+  /// Whether swiping the board sideways changes page.
+  ///
+  /// Off by default, and deliberately so. A swipe is a gesture, and a user who
+  /// activates cards by slapping can produce one by accident: a palm that lands
+  /// with a little drag. Flipping the page mid-reach is worse than a single
+  /// mis-hit, because the next slap then lands on an entirely different word.
+  /// The fixed arrows either side of the grid are always available and cannot
+  /// be triggered by anything happening on the cards.
+  final bool swipeToChangePage;
+
   /// At or above this many simultaneous contacts, a composite is considered a
   /// palm rather than a deliberate point.
   ///
@@ -96,6 +106,7 @@ class ResolverConfig {
     this.multiTouchLockout = true,
     this.coalesceWindowMillis = 50,
     this.palmContactCountThreshold = 3,
+    this.swipeToChangePage = false,
   });
 
   /// Kyle's provisional starting configuration. See DESIGN.md section 12.
@@ -120,6 +131,7 @@ class ResolverConfig {
     bool? multiTouchLockout,
     int? coalesceWindowMillis,
     int? palmContactCountThreshold,
+    bool? swipeToChangePage,
   }) {
     return ResolverConfig(
       mode: mode ?? this.mode,
@@ -137,6 +149,7 @@ class ResolverConfig {
       coalesceWindowMillis: coalesceWindowMillis ?? this.coalesceWindowMillis,
       palmContactCountThreshold:
           palmContactCountThreshold ?? this.palmContactCountThreshold,
+      swipeToChangePage: swipeToChangePage ?? this.swipeToChangePage,
     );
   }
 }

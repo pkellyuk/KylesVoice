@@ -16,56 +16,109 @@ BoardCard _card(int row, int col, String label) {
 void main() {
   group('Board editing', () {
     test('adding a card leaves other cells untouched', () {
-      final Board board = Board.kyleStarter.withCard(_card(1, 1, 'help'));
+      final Board board = Board.kyleStarter.withCard(
+        page: 0,
+        card: _card(1, 1, 'help'),
+      );
 
-      expect(board.cards.length, 5);
-      expect(board.cardAt(const CellAddress(row: 1, col: 1))!.label, 'help');
-      expect(board.cardAt(const CellAddress(row: 0, col: 0))!.label, 'drink');
+      expect(board.totalCards, 5);
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 1, col: 1))!
+            .label,
+        'help',
+      );
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 0))!
+            .label,
+        'drink',
+      );
     });
 
     test('adding to an occupied cell replaces only that card', () {
-      final Board board = Board.kyleStarter.withCard(_card(0, 0, 'juice'));
+      final Board board = Board.kyleStarter.withCard(
+        page: 0,
+        card: _card(0, 0, 'juice'),
+      );
 
-      expect(board.cards.length, 4);
-      expect(board.cardAt(const CellAddress(row: 0, col: 0))!.label, 'juice');
+      expect(board.totalCards, 4);
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 0))!
+            .label,
+        'juice',
+      );
     });
 
     test('a card outside the grid is refused rather than throwing', () {
-      final Board board = Board.kyleStarter.withCard(_card(9, 9, 'nowhere'));
+      final Board board = Board.kyleStarter.withCard(
+        page: 0,
+        card: _card(9, 9, 'nowhere'),
+      );
 
-      expect(board.cards.length, Board.kyleStarter.cards.length);
+      expect(board.totalCards, Board.kyleStarter.totalCards);
     });
 
     test('removing a card leaves the cell empty and in place', () {
       final Board board = Board.kyleStarter.withoutCard(
-        const CellAddress(row: 0, col: 0),
+        page: 0,
+        address: const CellAddress(row: 0, col: 0),
       );
 
-      expect(board.cardAt(const CellAddress(row: 0, col: 0)), isNull);
+      expect(
+        board.cardAt(page: 0, address: const CellAddress(row: 0, col: 0)),
+        isNull,
+      );
       // Crucially the grid does not shrink and nothing shuffles up into the gap.
       expect(board.rows, 2);
       expect(board.cols, 3);
-      expect(board.cardAt(const CellAddress(row: 0, col: 1))!.label, 'eat');
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 1))!
+            .label,
+        'eat',
+      );
     });
 
     test('moving onto an occupied cell is refused', () {
       final Board board = Board.kyleStarter.withMovedCard(
+        page: 0,
         from: const CellAddress(row: 0, col: 0),
         to: const CellAddress(row: 0, col: 1),
       );
 
-      expect(board.cardAt(const CellAddress(row: 0, col: 0))!.label, 'drink');
-      expect(board.cardAt(const CellAddress(row: 0, col: 1))!.label, 'eat');
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 0))!
+            .label,
+        'drink',
+      );
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 1))!
+            .label,
+        'eat',
+      );
     });
 
     test('moving to an empty cell succeeds', () {
       final Board board = Board.kyleStarter.withMovedCard(
+        page: 0,
         from: const CellAddress(row: 0, col: 0),
         to: const CellAddress(row: 1, col: 1),
       );
 
-      expect(board.cardAt(const CellAddress(row: 0, col: 0)), isNull);
-      expect(board.cardAt(const CellAddress(row: 1, col: 1))!.label, 'drink');
+      expect(
+        board.cardAt(page: 0, address: const CellAddress(row: 0, col: 0)),
+        isNull,
+      );
+      expect(
+        board
+            .cardAt(page: 0, address: const CellAddress(row: 1, col: 1))!
+            .label,
+        'drink',
+      );
     });
 
     test('shrinking the grid reports what would be lost instead of deleting it', () {
@@ -77,7 +130,7 @@ void main() {
       expect(result.orphaned.length, 1);
       expect(result.orphaned.first.label, 'finished');
       expect(result.board.cols, 2);
-      expect(result.board.cards.length, 3);
+      expect(result.board.totalCards, 3);
     });
 
     test('growing the grid keeps every card at its existing address', () {
@@ -86,7 +139,9 @@ void main() {
 
       expect(result.orphaned, isEmpty);
       expect(
-        result.board.cardAt(const CellAddress(row: 1, col: 2))!.label,
+        result.board
+            .cardAt(page: 0, address: const CellAddress(row: 1, col: 2))!
+            .label,
         'finished',
       );
     });
@@ -114,10 +169,13 @@ void main() {
       expect(result.board!.name, 'Kyle');
       expect(result.board!.rows, 2);
       expect(result.board!.cols, 3);
-      expect(result.board!.cards.length, 4);
+      expect(result.board!.totalCards, 4);
 
-      for (final BoardCard original in Board.kyleStarter.cards) {
-        expect(result.board!.cardAt(original.address), original);
+      for (final BoardCard original in Board.kyleStarter.pages.single.cards) {
+        expect(
+          result.board!.cardAt(page: 0, address: original.address),
+          original,
+        );
       }
     });
 
@@ -158,14 +216,18 @@ void main() {
       final BoardDecodeResult result = BoardCodec.decode(json);
 
       expect(result.succeeded, isTrue);
-      expect(result.board!.cards.length, 2);
+      expect(result.board!.totalCards, 2);
       expect(result.problems.length, 2);
       expect(
-        result.board!.cardAt(const CellAddress(row: 0, col: 0))!.label,
+        result.board!
+            .cardAt(page: 0, address: const CellAddress(row: 0, col: 0))!
+            .label,
         'drink',
       );
       expect(
-        result.board!.cardAt(const CellAddress(row: 1, col: 1))!.label,
+        result.board!
+            .cardAt(page: 0, address: const CellAddress(row: 1, col: 1))!
+            .label,
         'more',
       );
     });
@@ -182,9 +244,9 @@ void main() {
 
       final BoardDecodeResult result = BoardCodec.decode(json);
 
-      expect(result.board!.cards.length, 1);
-      expect(result.board!.cards.first.label, 'first');
-      expect(result.problems.single, contains('Two cards claimed'));
+      expect(result.board!.totalCards, 1);
+      expect(result.board!.pages.single.cards.first.label, 'first');
+      expect(result.problems.single, contains('Two cards on board claimed'));
     });
 
     test('a board with no usable grid is refused', () {
@@ -211,7 +273,7 @@ void main() {
         '{"rows": 1, "cols": 1, "cards": [{"row": 0, "col": 0}]}',
       );
 
-      final BoardCard card = result.board!.cards.single;
+      final BoardCard card = result.board!.pages.single.cards.single;
 
       expect(card.label, '');
       expect(card.kind, CardKind.speak);
@@ -245,7 +307,7 @@ void main() {
 
     test('a saved board is restored exactly', () async {
       final Board edited = Board.kyleStarter
-          .withCard(_card(1, 1, 'help'))
+          .withCard(page: 0, card: _card(1, 1, 'help'))
           .copyWith(name: 'Kyle v2');
 
       expect(await repo.save(edited), isEmpty);
@@ -254,9 +316,11 @@ void main() {
 
       expect(result.wasRestored, isTrue);
       expect(result.board.name, 'Kyle v2');
-      expect(result.board.cards.length, 5);
+      expect(result.board.totalCards, 5);
       expect(
-        result.board.cardAt(const CellAddress(row: 1, col: 1))!.label,
+        result.board
+            .cardAt(page: 0, address: const CellAddress(row: 1, col: 1))!
+            .label,
         'help',
       );
     });
@@ -307,7 +371,7 @@ void main() {
         final BoardLoadResult result = await repo.load();
 
         // The user is left with a working board no matter what.
-        expect(result.board.cards, isNotEmpty);
+        expect(result.board.pages.single.cards, isNotEmpty);
         expect(result.wasRestored, isFalse);
       },
     );
@@ -326,14 +390,14 @@ void main() {
       final BoardLoadResult result = await repo.load();
 
       expect(result.wasRestored, isTrue);
-      expect(result.board.cards.length, 2);
+      expect(result.board.totalCards, 2);
     });
 
     test('saving a null or invalid board is refused with a reason', () async {
       expect(await repo.save(null), isNotEmpty);
       expect(
         await repo.save(
-          const Board(name: 'x', rows: 0, cols: 0, cards: <BoardCard>[]),
+          const Board(name: 'x', rows: 0, cols: 0, pages: <BoardPage>[]),
         ),
         isNotEmpty,
       );

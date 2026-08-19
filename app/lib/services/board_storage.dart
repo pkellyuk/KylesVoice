@@ -77,7 +77,7 @@ class BoardStorage {
     Log.step(
       'BoardStorage.load',
       'restored=${result.wasRestored} usedBackup=${result.usedBackup} '
-          'cards=${result.board.cards.length} problems=${result.problems.length}',
+          'cards=${result.board.totalCards} problems=${result.problems.length}',
     );
 
     for (final String problem in result.problems) {

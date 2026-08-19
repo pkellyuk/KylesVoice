@@ -66,8 +66,11 @@ void main() {
     // Saved as soon as the edit was made, not on leaving the editor: the device
     // gets thrown, so there is no safe moment to hold unsaved changes.
     expect(saved.length, 1);
-    expect(saved.single.cards.length, 5);
-    expect(saved.single.cards.any((BoardCard c) => c.label == 'help'), isTrue);
+    expect(saved.single.totalCards, 5);
+    expect(
+      saved.single.pages.single.cards.any((BoardCard c) => c.label == 'help'),
+      isTrue,
+    );
   });
 
   testWidgets('a card with no word and no phrase is refused', (
@@ -105,12 +108,24 @@ void main() {
 
     // The card is gone, but the grid has not shrunk and nothing has shuffled
     // into the gap. Every other card is exactly where it was.
-    expect(result.cardAt(const CellAddress(row: 0, col: 0)), isNull);
+    expect(
+      result.cardAt(page: 0, address: const CellAddress(row: 0, col: 0)),
+      isNull,
+    );
     expect(result.rows, 2);
     expect(result.cols, 3);
-    expect(result.cardAt(const CellAddress(row: 0, col: 1))!.label, 'eat');
-    expect(result.cardAt(const CellAddress(row: 1, col: 0))!.label, 'more');
-    expect(result.cardAt(const CellAddress(row: 1, col: 2))!.label, 'finished');
+    expect(
+      result.cardAt(page: 0, address: const CellAddress(row: 0, col: 1))!.label,
+      'eat',
+    );
+    expect(
+      result.cardAt(page: 0, address: const CellAddress(row: 1, col: 0))!.label,
+      'more',
+    );
+    expect(
+      result.cardAt(page: 0, address: const CellAddress(row: 1, col: 2))!.label,
+      'finished',
+    );
   });
 
   testWidgets('undo restores the board after a deletion', (
@@ -130,7 +145,9 @@ void main() {
 
     expect(saved.length, 2);
     expect(
-      saved.last.cardAt(const CellAddress(row: 0, col: 0))!.label,
+      saved.last
+          .cardAt(page: 0, address: const CellAddress(row: 0, col: 0))!
+          .label,
       'drink',
     );
   });

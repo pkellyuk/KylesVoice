@@ -171,6 +171,12 @@ defaults rather than failing.
 
 ---
 
+## Schema history
+
+- **Schema 1** — a single flat `cards` array, one page implied.
+- **Schema 2** — a `pages` array, each with its own `cards`. Schema 1 files are
+  read as a single page, so a board built before paging existed loses nothing.
+
 ## Why JSON, not SQLite
 
 The implementation in `packages/kylesvoice_core/lib/src/store/` stores a board as

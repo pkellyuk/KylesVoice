@@ -33,7 +33,7 @@ class BoardDecodeResult {
 /// before the data volume was clear.
 class BoardCodec {
   /// Bumped whenever the on-disk shape changes in a way that needs migration.
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
 
   static String encode(Board? board) {
     if (board == null) {
@@ -49,27 +49,35 @@ class BoardCodec {
       'name': board.name,
       'rows': board.rows,
       'cols': board.cols,
-      'cards': board.cards
+      'pages': board.pages
           .map(
-            (BoardCard c) => <String, Object?>{
-              'row': c.address.row,
-              'col': c.address.col,
-              'label': c.label,
-              'speech': c.speech,
-              'glyph': c.glyph,
-              'symbolFile': c.symbolFile,
-              'colourArgb': c.colourArgb,
-              'photoFile': c.photoFile,
-              'imageMode': c.imageMode.name,
-              'blend': c.blend,
-              'kind': c.kind.name,
-              'rowSpan': c.rowSpan,
-              'colSpan': c.colSpan,
-              'hidden': c.hidden,
-            },
+            (BoardPage page) => <String, Object?>{'cards': _cardsToJson(page)},
           )
           .toList(),
     };
+  }
+
+  static List<Map<String, Object?>> _cardsToJson(BoardPage page) {
+    return page.cards
+        .map(
+          (BoardCard c) => <String, Object?>{
+            'row': c.address.row,
+            'col': c.address.col,
+            'label': c.label,
+            'speech': c.speech,
+            'glyph': c.glyph,
+            'symbolFile': c.symbolFile,
+            'colourArgb': c.colourArgb,
+            'photoFile': c.photoFile,
+            'imageMode': c.imageMode.name,
+            'blend': c.blend,
+            'kind': c.kind.name,
+            'rowSpan': c.rowSpan,
+            'colSpan': c.colSpan,
+            'hidden': c.hidden,
+          },
+        )
+        .toList();
   }
 
   /// Decodes a board from JSON text.
@@ -134,61 +142,46 @@ class BoardCodec {
       );
     }
 
-    final List<BoardCard> cards = <BoardCard>[];
-    final Set<CellAddress> seen = <CellAddress>{};
-    final Object? rawCards = raw['cards'];
+    final List<BoardPage> pages = <BoardPage>[];
+    final Object? rawPages = raw['pages'];
 
-    if (rawCards is List) {
-      for (int i = 0; i < rawCards.length; i = i + 1) {
-        final Object? entry = rawCards[i];
+    if (rawPages is List) {
+      for (int p = 0; p < rawPages.length; p = p + 1) {
+        final Object? entry = rawPages[p];
 
         if (entry is! Map) {
-          problems.add('Card $i was not readable and has been dropped.');
+          problems.add('Page ${p + 1} was not readable and has been dropped.');
           continue;
         }
 
-        final int row = _asInt(entry['row'], -1);
-        final int col = _asInt(entry['col'], -1);
-
-        if (row < 0 || row >= rows || col < 0 || col >= cols) {
-          problems.add(
-            'Card $i sat outside the grid at row $row, column $col, '
-            'and has been dropped.',
-          );
-          continue;
-        }
-
-        final CellAddress address = CellAddress(row: row, col: col);
-
-        if (seen.contains(address)) {
-          problems.add(
-            'Two cards claimed row $row, column $col. The later one was dropped.',
-          );
-          continue;
-        }
-
-        seen.add(address);
-
-        cards.add(
-          BoardCard(
-            address: address,
-            label: _asString(entry['label'], ''),
-            speech: _asString(entry['speech'], ''),
-            glyph: _asString(entry['glyph'], ''),
-            symbolFile: _asString(entry['symbolFile'], ''),
-            colourArgb: _asInt(entry['colourArgb'], 0xFF4FA3D1),
-            photoFile: _asString(entry['photoFile'], ''),
-            imageMode: _asImageMode(entry['imageMode']),
-            blend: _asDouble(entry['blend'], 0).clamp(0.0, 1.0),
-            kind: _asKind(entry['kind']),
-            rowSpan: _asInt(entry['rowSpan'], 1).clamp(1, rows),
-            colSpan: _asInt(entry['colSpan'], 1).clamp(1, cols),
-            hidden: entry['hidden'] == true,
+        pages.add(
+          _decodePage(
+            raw: entry['cards'],
+            rows: rows,
+            cols: cols,
+            label: 'page ${p + 1}',
+            problems: problems,
           ),
         );
       }
-    } else if (rawCards != null) {
-      problems.add('Card list was not readable; the board is empty.');
+    } else if (raw.containsKey('cards')) {
+      // Schema 1 stored a single flat card list with no pages. Read it as page
+      // one rather than discarding it: a parent who updates the app must not
+      // lose the board they have been building.
+      pages.add(
+        _decodePage(
+          raw: raw['cards'],
+          rows: rows,
+          cols: cols,
+          label: 'board',
+          problems: problems,
+        ),
+      );
+    }
+
+    if (pages.isEmpty) {
+      // A board must always have somewhere to put a card.
+      pages.add(BoardPage.blank);
     }
 
     return BoardDecodeResult(
@@ -196,10 +189,84 @@ class BoardCodec {
         name: _asString(raw['name'], 'Board'),
         rows: rows,
         cols: cols,
-        cards: cards,
+        pages: pages,
       ),
       problems: problems,
     );
+  }
+
+  /// Decodes one page's cards, salvaging what it can.
+  static BoardPage _decodePage({
+    required Object? raw,
+    required int rows,
+    required int cols,
+    required String label,
+    required List<String> problems,
+  }) {
+    final List<BoardCard> cards = <BoardCard>[];
+    final Set<CellAddress> seen = <CellAddress>{};
+
+    if (raw is! List) {
+      if (raw != null) {
+        problems.add('The card list for $label was not readable.');
+      }
+
+      return BoardPage(cards: cards);
+    }
+
+    for (int i = 0; i < raw.length; i = i + 1) {
+      final Object? entry = raw[i];
+
+      if (entry is! Map) {
+        problems.add(
+          'Card ${i + 1} on $label was not readable and has been dropped.',
+        );
+        continue;
+      }
+
+      final int row = _asInt(entry['row'], -1);
+      final int col = _asInt(entry['col'], -1);
+
+      if (row < 0 || row >= rows || col < 0 || col >= cols) {
+        problems.add(
+          'A card on $label sat outside the grid at row $row, column $col, '
+          'and has been dropped.',
+        );
+        continue;
+      }
+
+      final CellAddress address = CellAddress(row: row, col: col);
+
+      if (seen.contains(address)) {
+        problems.add(
+          'Two cards on $label claimed row $row, column $col. '
+          'The later one was dropped.',
+        );
+        continue;
+      }
+
+      seen.add(address);
+
+      cards.add(
+        BoardCard(
+          address: address,
+          label: _asString(entry['label'], ''),
+          speech: _asString(entry['speech'], ''),
+          glyph: _asString(entry['glyph'], ''),
+          symbolFile: _asString(entry['symbolFile'], ''),
+          colourArgb: _asInt(entry['colourArgb'], 0xFF4FA3D1),
+          photoFile: _asString(entry['photoFile'], ''),
+          imageMode: _asImageMode(entry['imageMode']),
+          blend: _asDouble(entry['blend'], 0).clamp(0.0, 1.0),
+          kind: _asKind(entry['kind']),
+          rowSpan: _asInt(entry['rowSpan'], 1).clamp(1, rows),
+          colSpan: _asInt(entry['colSpan'], 1).clamp(1, cols),
+          hidden: entry['hidden'] == true,
+        ),
+      );
+    }
+
+    return BoardPage(cards: cards);
   }
 
   static ImageMode _asImageMode(Object? value) {

@@ -38,6 +38,7 @@ class EditorScreen extends StatefulWidget {
 
 class _EditorScreenState extends State<EditorScreen> {
   late Board _board;
+  int _page = 0;
 
   /// The board as it was before the most recent change.
   ///
@@ -112,7 +113,7 @@ class _EditorScreenState extends State<EditorScreen> {
   Future<void> _editCell(CellAddress address) async {
     Log.enter('_EditorScreenState._editCell', 'address=$address');
 
-    final BoardCard? existing = _board.cardAt(address);
+    final BoardCard? existing = _board.cardAt(page: _page, address: address);
 
     final CardEditResult? result = await Navigator.of(context)
         .push<CardEditResult>(
@@ -133,7 +134,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
     if (result.action == CardEditAction.delete) {
       await _apply(
-        _board.withoutCard(address),
+        _board.withoutCard(page: _page, address: address),
         'Removed "${existing?.label ?? ''}". The cell keeps its place.',
       );
       Log.exit('_EditorScreenState._editCell', 'deleted');
@@ -142,16 +143,146 @@ class _EditorScreenState extends State<EditorScreen> {
 
     if (result.action == CardEditAction.save && result.card != null) {
       await _apply(
-        _board.withCard(result.card),
+        _board.withCard(page: _page, card: result.card),
         existing == null
             ? 'Added "${result.card!.label}".'
             : 'Updated "${result.card!.label}".',
       );
+
+      await _offerPageIfFull();
+
       Log.exit('_EditorScreenState._editCell', 'saved');
       return;
     }
 
     Log.exit('_EditorScreenState._editCell', 'no change');
+  }
+
+  void _goToPage(int index) {
+    Log.enter('_EditorScreenState._goToPage', 'from=$_page to=$index');
+
+    setState(() {
+      _page = _board.clampPage(index);
+    });
+
+    Log.exit('_EditorScreenState._goToPage', 'page=$_page');
+  }
+
+  Future<void> _addPage() async {
+    Log.enter('_EditorScreenState._addPage', 'pages=${_board.pageCount}');
+
+    final Board grown = _board.withPageAdded();
+
+    await _apply(grown, 'Added page ${grown.pageCount}.');
+    _goToPage(grown.pageCount - 1);
+
+    Log.exit('_EditorScreenState._addPage', 'pages=${grown.pageCount}');
+  }
+
+  /// Offers a new page once the last one fills up.
+  ///
+  /// Adding a page is the safe way for a board to grow: nothing already placed
+  /// moves. Resizing the grid is the alternative and it costs every learned
+  /// position, so the editor steers toward paging rather than mentioning it.
+  Future<void> _offerPageIfFull() async {
+    if (_board.isPageFull(_page) == false) {
+      return;
+    }
+
+    if (_page != _board.pageCount - 1) {
+      return;
+    }
+
+    Log.enter('_EditorScreenState._offerPageIfFull', 'page=$_page is full');
+
+    final bool? add = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2228),
+        title: const Text(
+          'This page is full',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Add another page to keep going. Everything already on this page '
+          'stays exactly where it is, so nothing anyone has learned is lost.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Add a page'),
+          ),
+        ],
+      ),
+    );
+
+    if (add != true) {
+      Log.exit('_EditorScreenState._offerPageIfFull', 'declined');
+      return;
+    }
+
+    await _addPage();
+
+    Log.exit('_EditorScreenState._offerPageIfFull', 'page added');
+  }
+
+  Future<void> _removeCurrentPage() async {
+    Log.enter('_EditorScreenState._removeCurrentPage', 'page=$_page');
+
+    if (_board.pageCount <= 1) {
+      setState(() {
+        _status = 'A board must keep at least one page.';
+      });
+      Log.exit('_EditorScreenState._removeCurrentPage', 'refused: last page');
+      return;
+    }
+
+    final ({Board board, List<BoardCard> removed}) result = _board
+        .withPageRemoved(_page);
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C2228),
+        title: Text(
+          'Remove page ${_page + 1}?',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          result.removed.isEmpty
+              ? 'The page is empty, so nothing will be lost.'
+              : 'These ${result.removed.length} card(s) go with it: '
+                    '${result.removed.map((BoardCard c) => c.label).join(', ')}.'
+                    r' Later pages will move down a number.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep it'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      Log.exit('_EditorScreenState._removeCurrentPage', 'cancelled');
+      return;
+    }
+
+    await _apply(result.board, 'Removed page ${_page + 1}.');
+    _goToPage(_page);
+
+    Log.exit('_EditorScreenState._removeCurrentPage', 'removed');
   }
 
   Future<void> _editGridSize() async {
@@ -256,8 +387,57 @@ class _EditorScreenState extends State<EditorScreen> {
         backgroundColor: const Color(0xFF0E1216),
         appBar: AppBar(
           backgroundColor: const Color(0xFF161B21),
-          title: Text('Editing ${_board.name}'),
+          title: Text(
+            _board.pageCount > 1
+                ? 'Editing ${_board.name} — page ${_page + 1} of '
+                      '${_board.pageCount}'
+                : 'Editing ${_board.name}',
+          ),
           actions: <Widget>[
+            IconButton(
+              onPressed: _page > 0 ? () => _goToPage(_page - 1) : null,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Previous page',
+            ),
+            IconButton(
+              onPressed: _page < _board.pageCount - 1
+                  ? () => _goToPage(_page + 1)
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Next page',
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.layers_outlined),
+              tooltip: 'Pages',
+              onSelected: (String choice) {
+                if (choice == 'add') {
+                  _addPage();
+                  return;
+                }
+
+                if (choice == 'remove') {
+                  _removeCurrentPage();
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'add',
+                  child: ListTile(
+                    leading: Icon(Icons.add),
+                    title: Text('Add a page'),
+                    subtitle: Text('Nothing already placed moves'),
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'remove',
+                  enabled: _board.pageCount > 1,
+                  child: ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: Text('Remove page ${_page + 1}'),
+                  ),
+                ),
+              ],
+            ),
             IconButton(
               onPressed: _undo == null ? null : _undoLast,
               icon: const Icon(Icons.undo),
@@ -291,7 +471,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     child: Text(
                       _status.isEmpty
                           ? 'Tap any cell to add or change a card. Changes save '
-                                'as you make them.'
+                                'as you make them. When a page fills up, add '
+                                'another rather than resizing the grid.'
                           : _status,
                       style: const TextStyle(
                         color: Colors.white54,
@@ -333,7 +514,10 @@ class _EditorScreenState extends State<EditorScreen> {
           children: grid
               .allCells()
               .map((PositionedCell cell) {
-                final BoardCard? card = _board.cardAt(cell.address);
+                final BoardCard? card = _board.cardAt(
+                  page: _page,
+                  address: cell.address,
+                );
 
                 return Positioned(
                   left: cell.rect.left,

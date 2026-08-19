@@ -76,6 +76,9 @@ Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
       salvaging decode. Supersedes the SQLite sketch; see `DATA-MODEL.md`.
       Verified on device: a card added in the editor survives a force-stop.
 - [ ] Low-stimulation theme; press feedback with haptics.
+- [x] Multiple pages per board, reached by fixed arrows in reserved strips.
+      Adding a page moves nothing already placed, so a full grid never forces
+      a resize. Swipe paging available but off by default.
 - [ ] Home/back navigation and folder cards.
 
 **Exit criterion:** Kyle uses it daily for a fortnight and mis-fires are rare

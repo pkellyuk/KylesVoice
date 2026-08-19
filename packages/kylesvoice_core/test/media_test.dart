@@ -77,7 +77,12 @@ void main() {
   group('Photo serialisation', () {
     test('photo fields survive a round trip', () {
       final Board board = Board.kyleStarter.withCard(
-        _photoCard(photoFile: 'img_abc.jpg', mode: ImageMode.blend, blend: 0.4),
+        page: 0,
+        card: _photoCard(
+          photoFile: 'img_abc.jpg',
+          mode: ImageMode.blend,
+          blend: 0.4,
+        ),
       );
 
       final BoardDecodeResult result = BoardCodec.decode(
@@ -85,7 +90,8 @@ void main() {
       );
 
       final BoardCard restored = result.board!.cardAt(
-        const CellAddress(row: 1, col: 1),
+        page: 0,
+        address: const CellAddress(row: 1, col: 1),
       )!;
 
       expect(restored.photoFile, 'img_abc.jpg');
@@ -104,7 +110,7 @@ void main() {
       ''';
 
       final BoardDecodeResult result = BoardCodec.decode(legacy);
-      final BoardCard card = result.board!.cards.single;
+      final BoardCard card = result.board!.pages.single.cards.single;
 
       expect(result.isClean, isTrue);
       expect(card.hasPhoto, isFalse);
@@ -117,7 +123,10 @@ void main() {
         '"imageMode": "kaleidoscope"}]}',
       );
 
-      expect(result.board!.cards.single.imageMode, ImageMode.photo);
+      expect(
+        result.board!.pages.single.cards.single.imageMode,
+        ImageMode.photo,
+      );
     });
   });
 
@@ -215,7 +224,8 @@ void main() {
       final String orphan = await repo.media.save(bytes: <int>[2]);
 
       final Board board = Board.kyleStarter.withCard(
-        _photoCard(photoFile: kept),
+        page: 0,
+        card: _photoCard(photoFile: kept),
       );
 
       expect(await repo.media.pruneOrphans(board), 1);
@@ -229,8 +239,14 @@ void main() {
       // wherever they took it.
       final String name = await repo.media.save(bytes: <int>[1]);
 
-      Board board = Board.kyleStarter.withCard(_photoCard(photoFile: name));
-      board = board.withoutCard(const CellAddress(row: 1, col: 1));
+      Board board = Board.kyleStarter.withCard(
+        page: 0,
+        card: _photoCard(photoFile: name),
+      );
+      board = board.withoutCard(
+        page: 0,
+        address: const CellAddress(row: 1, col: 1),
+      );
       await repo.save(board);
 
       expect(repo.media.exists(name), isTrue);
