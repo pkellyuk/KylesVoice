@@ -51,9 +51,16 @@ Apple Developer Program fee and the macOS build dependency.
 Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
 
 - [ ] Fixed grid renderer with position-as-identity and preserved empty cells.
-- [ ] **Palm-mode touch resolution** (contact-area overlap, multi-touch lockout,
-      post-activation lockout). This is MVP, not an add-on — without it the app
-      does not work for him.
+- [x] **Palm-mode touch resolution** — `packages/kylesvoice_core`. Exact
+      ellipse-versus-cell overlap, contact coalescing into composite hand
+      landings, area-weighted scoring, ambiguity detection, post-activation
+      lockout and dwell. 77 tests, including replay of the real captures in
+      `docs/captures/`. Calibration constants still to be set from Kyle's own
+      data.
+- [ ] Wire the resolver into a Flutter widget layer and verify on device.
+- [ ] Settle `lockoutMillis` from Kyle's data. The captures show the default
+      800 ms merges deliberately repeated slaps into one activation — correct
+      for a rebounding hand, wrong for a child repeating a word on purpose.
 - [ ] Speak-on-tap with platform TTS; voice, rate, pitch selection.
 - [ ] Card model with photo, label and independent spoken text.
 - [ ] Photo capture from camera into a card.

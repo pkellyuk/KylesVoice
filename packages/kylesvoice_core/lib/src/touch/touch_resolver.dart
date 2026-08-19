@@ -1,6 +1,7 @@
 import '../geometry/contact_ellipse.dart';
 import '../geometry/ellipse_overlap.dart';
 import '../grid/grid_geometry.dart';
+import 'composite_contact.dart';
 import 'resolver_config.dart';
 
 /// Why a resolution produced no activation.
@@ -16,7 +17,16 @@ enum RejectionReason {
 
 /// How a cell was arrived at, recorded so that we can later measure whether
 /// palm mode is actually helping rather than assuming it.
-enum ResolutionMethod { point, palmOverlap, fallbackRadius, none }
+enum ResolutionMethod {
+  point,
+  palmOverlap,
+  fallbackRadius,
+
+  /// Several simultaneous contacts resolved together as one act. This is what a
+  /// palm slap actually produces on real hardware.
+  compositeOverlap,
+  none,
+}
 
 /// The outcome of resolving one contact against the grid.
 class TouchResolution {
@@ -185,6 +195,132 @@ class TouchResolver {
     }
 
     return candidate;
+  }
+
+  /// Resolves a whole hand-landing against [grid].
+  ///
+  /// Scores each cell by the total overlap contributed by every contact in the
+  /// composite. Summing overlap areas weights the result naturally: the heel of
+  /// the hand, being the largest contact, exerts the most influence, while a
+  /// grazing fingertip on a neighbouring cell exerts little. That matches the
+  /// intent behind a slap far better than either resolving each pointer
+  /// separately or trusting whichever pointer happened to register first.
+  ///
+  /// The lockout applies to the composite as a whole, so one slap produces
+  /// exactly one activation rather than one per finger.
+  TouchResolution resolveComposite({
+    required CompositeContact? composite,
+    required GridGeometry? grid,
+    required int timestampMillis,
+    bool commit = true,
+  }) {
+    if (composite == null || composite.isEmpty) {
+      return TouchResolution.none;
+    }
+
+    if (grid == null || grid.isValid == false) {
+      return TouchResolution.none.rejectedBecause(RejectionReason.invalidGrid);
+    }
+
+    if (_isLockedOut(timestampMillis)) {
+      return TouchResolution.none.rejectedBecause(RejectionReason.lockout);
+    }
+
+    // A single contact is just an ordinary touch; keep it on the existing path
+    // so point mode and the auto heuristic still apply to it.
+    if (composite.contactCount == 1) {
+      return resolve(
+        contact: composite.contacts.first.ellipse,
+        grid: grid,
+        timestampMillis: timestampMillis,
+        commit: commit,
+      );
+    }
+
+    CellAddress? bestCell;
+    CellAddress? secondCell;
+    double bestScore = 0;
+    double secondScore = 0;
+
+    for (final PositionedCell cell in grid.allCells()) {
+      double score = 0;
+
+      for (final ClusteredContact contact in composite.contacts) {
+        score =
+            score +
+            EllipseOverlap.area(ellipse: contact.ellipse, rect: cell.rect);
+      }
+
+      if (score <= 0) {
+        continue;
+      }
+
+      if (score > bestScore) {
+        secondScore = bestScore;
+        secondCell = bestCell;
+        bestScore = score;
+        bestCell = cell.address;
+        continue;
+      }
+
+      if (score > secondScore) {
+        secondScore = score;
+        secondCell = cell.address;
+      }
+    }
+
+    if (bestCell == null) {
+      return TouchResolution.none.rejectedBecause(RejectionReason.noOverlap);
+    }
+
+    final bool ambiguous = _isAmbiguous(best: bestScore, second: secondScore);
+
+    final TouchResolution candidate = TouchResolution(
+      cell: bestCell,
+      method: ResolutionMethod.compositeOverlap,
+      rejection: RejectionReason.none,
+      winningOverlap: bestScore,
+      runnerUpOverlap: secondScore,
+      runnerUpCell: secondCell,
+      wasAmbiguous: ambiguous,
+    );
+
+    if (ambiguous && config.ambiguityPolicy == AmbiguityPolicy.ignore) {
+      return candidate.rejectedBecause(RejectionReason.ambiguous);
+    }
+
+    if (commit) {
+      _lastActivationMillis = timestampMillis;
+    }
+
+    return candidate;
+  }
+
+  /// Whether a composite looks like a palm rather than a deliberate point.
+  ///
+  /// Contact count is the primary signal because it proved by far the most
+  /// reliable in the capture data. Contact size is a fallback for devices whose
+  /// drivers coalesce a hand into fewer reported pointers.
+  bool isPalm(CompositeContact? composite) {
+    if (composite == null || composite.isEmpty) {
+      return false;
+    }
+
+    if (composite.contactCount >= config.palmContactCountThreshold) {
+      return true;
+    }
+
+    final ClusteredContact? biggest = composite.largest;
+
+    if (biggest == null) {
+      return false;
+    }
+
+    if (biggest.ellipse.isMeasured == false) {
+      return false;
+    }
+
+    return biggest.ellipse.radiusMajor >= config.autoPalmRadiusThreshold;
   }
 
   bool _isLockedOut(int timestampMillis) {

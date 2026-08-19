@@ -59,8 +59,29 @@ class ResolverConfig {
   final double autoPalmRadiusThreshold;
 
   /// Whether additional pointers landing while one is already down are ignored.
-  /// A palm slap routinely registers several within milliseconds.
+  ///
+  /// Superseded in practice by contact coalescing, which is a better model of
+  /// what the hardware reports. Retained because point mode on a device with a
+  /// well-behaved single-touch driver still benefits from it, and because
+  /// switch-driven activation has no use for coalescing at all.
   final bool multiTouchLockout;
+
+  /// Contacts landing within this many milliseconds of each other are treated
+  /// as one composite act rather than as separate activations.
+  ///
+  /// Measurement drove the default: a single slap produced six contacts spread
+  /// over 16 ms. Fifty milliseconds gives comfortable margin without being long
+  /// enough to merge two deliberate taps.
+  final int coalesceWindowMillis;
+
+  /// At or above this many simultaneous contacts, a composite is considered a
+  /// palm rather than a deliberate point.
+  ///
+  /// Concurrent contact count proved the most reliable palm indicator in the
+  /// capture data: six contacts inside 16 ms for a slap, against one for
+  /// deliberate tapping. It is far more dependable than any single contact's
+  /// radius, which varied ninefold within one slap.
+  final int palmContactCountThreshold;
 
   const ResolverConfig({
     this.mode = TouchMode.palm,
@@ -73,6 +94,8 @@ class ResolverConfig {
     this.calibrationScale = 1.0,
     this.autoPalmRadiusThreshold = 30,
     this.multiTouchLockout = true,
+    this.coalesceWindowMillis = 50,
+    this.palmContactCountThreshold = 3,
   });
 
   /// Kyle's provisional starting configuration. See DESIGN.md section 12.
@@ -95,6 +118,8 @@ class ResolverConfig {
     double? calibrationScale,
     double? autoPalmRadiusThreshold,
     bool? multiTouchLockout,
+    int? coalesceWindowMillis,
+    int? palmContactCountThreshold,
   }) {
     return ResolverConfig(
       mode: mode ?? this.mode,
@@ -109,6 +134,9 @@ class ResolverConfig {
       autoPalmRadiusThreshold:
           autoPalmRadiusThreshold ?? this.autoPalmRadiusThreshold,
       multiTouchLockout: multiTouchLockout ?? this.multiTouchLockout,
+      coalesceWindowMillis: coalesceWindowMillis ?? this.coalesceWindowMillis,
+      palmContactCountThreshold:
+          palmContactCountThreshold ?? this.palmContactCountThreshold,
     );
   }
 }

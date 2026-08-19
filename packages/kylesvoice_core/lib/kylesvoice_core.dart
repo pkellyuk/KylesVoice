@@ -10,5 +10,7 @@ export 'src/geometry/contact_ellipse.dart';
 export 'src/geometry/ellipse_overlap.dart';
 export 'src/geometry/primitives.dart';
 export 'src/grid/grid_geometry.dart';
+export 'src/touch/composite_contact.dart';
+export 'src/touch/contact_coalescer.dart';
 export 'src/touch/resolver_config.dart';
 export 'src/touch/touch_resolver.dart';
