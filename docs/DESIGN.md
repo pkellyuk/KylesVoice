@@ -183,8 +183,37 @@ Resolve the **contact patch**, not a single point:
 - Compute the **overlap area between that ellipse and each cell's rectangle**.
 - Activate the cell with the greatest overlap.
 
-An open-palm slap then lands on the card the palm is mostly covering, rather
-than on whichever card happens to sit under the reported centre point.
+**What this does and does not buy, stated precisely.** An earlier draft of this
+document claimed area resolution makes a slap land on the card the palm mostly
+covers "rather than whichever card sits under the reported centre point". That
+is not true in general, and the distinction matters enough to correct.
+
+A contact ellipse is symmetric about its centre. Across two equal, adjoining
+cells, the majority of its area therefore *always* falls on the side its centre
+is on. On a uniform grid with no gutters, area resolution and a naive centre
+hit-test select the same cell, always. Area resolution cannot by itself rescue a
+slap whose reported centroid already landed on the wrong card.
+
+What it genuinely provides:
+
+1. **No dead zones.** Point mode cannot resolve a centre that lands in a gutter,
+   and returns nothing. A contact spanning the gutter still overlaps the cells
+   either side, so area resolution always has an answer. On a board with
+   generous gutters — which is what we want, to reduce edge mis-hits — this is
+   the everyday case, not a corner case.
+2. **Correct behaviour at screen edges**, where part of the contact falls
+   outside the grid and the balance between cells is no longer symmetric about
+   the reported centre.
+3. **Correct behaviour across cells of unequal size**, once spans are in use. A
+   contact centred just inside a small cell may genuinely cover more of an
+   adjacent 2x2 card, and area resolution gets that right.
+4. **Ambiguity detection.** This is arguably the most valuable of the four. Area
+   resolution knows *how close* the call was, which a point hit-test cannot. That
+   is what makes the `ignore` policy in 5.2 possible at all, and what lets usage
+   logging measure how often Kyle's activations were near-ties.
+
+Contact size is also what makes `auto` mode in 5.6 possible, and what tells us
+whether to trust a given touch at all.
 
 Two caveats to validate on real hardware, both handled by the calibration spike
 in `ROADMAP.md` Phase 0:
