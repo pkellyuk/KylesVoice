@@ -7,6 +7,7 @@ import '../services/display_metrics.dart';
 import '../services/session_recorder.dart';
 import '../services/session_store.dart';
 import '../widgets/contact_painter.dart';
+import 'tts_screen.dart';
 
 /// The capture surface.
 ///
@@ -236,6 +237,22 @@ class _CaptureScreenState extends State<CaptureScreen> {
     );
   }
 
+  /// Opens the speech-capability probe.
+  ///
+  /// Lives alongside touch capture so a single visit to the device answers both
+  /// open hardware questions: can it measure a palm, and can it talk.
+  Future<void> _openTtsCheck() async {
+    Log.enter('_CaptureScreenState._openTtsCheck');
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const TtsScreen(),
+      ),
+    );
+
+    Log.exit('_CaptureScreenState._openTtsCheck', 'returned to capture');
+  }
+
   void _onVerboseChanged(bool? value) {
     Log.enter('_CaptureScreenState._onVerboseChanged', 'value=$value');
 
@@ -408,6 +425,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
             onPressed: _reset,
             icon: const Icon(Icons.delete_outline),
             label: const Text('Clear session'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _openTtsCheck,
+            icon: const Icon(Icons.record_voice_over_outlined),
+            label: const Text('Speech check'),
           ),
           const SizedBox(height: 4),
           SwitchListTile(

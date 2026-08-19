@@ -44,6 +44,11 @@ dependencies:
   # other practical way to get the capture off the tablet.
   share_plus: ^10.0.2
 
+  # Enumerates the device's speech engines and voices. The target device is an
+  # Amazon Fire tablet, where Google's TTS engine is not present by default, so
+  # what speech is actually available has to be measured rather than assumed.
+  flutter_tts: ^4.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

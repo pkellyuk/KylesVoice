@@ -20,8 +20,12 @@ Apple Developer Program fee and the macOS build dependency.
 - [x] Code licence: GPL-3.0, confirmed.
 - [ ] Confirm bundled symbol set and verify its licence terms directly with the
       source (Mulberry proposed; ARASAAC's NC clause reviewed).
-- [ ] Confirm Kyle's actual Android tablet — screen size drives grid sizing, and
-      the touch driver drives radius calibration.
+- [x] Target devices confirmed: Amazon Fire HD 8 (primary, Play Store
+      sideloaded) plus two rugged Android phones. See `DESIGN.md` section 13.
+- [ ] Settle the grid dimensions from spike data. Provisionally 3 x 2, revised
+      down from 4 x 3 because of the 8-inch screen. Fixed forever once chosen.
+- [ ] Answer the phone question in `DESIGN.md` 13.2: same board at reduced
+      accuracy, or parent-held backup voice?
 - [x] **Touch-geometry spike built** — `tools/touch_spike`. Logs every pointer
       event's position, radius, pressure and timing to CSV, reads true physical
       DPI over a platform channel, visualises the contact ellipse live, and
@@ -86,8 +90,19 @@ Goal: useful to the rest of the SLT team's caseload, not just Kyle.
 - [ ] OBF/OBZ import and export.
 - [ ] Starter board set templates.
 - [ ] Backup to the user's own cloud drive.
-- [ ] Play Store and App Store release: privacy policy, Data Safety, Families
-      policy compliance, content rating.
+- [ ] **Distribution.** Play Store alone is insufficient: the primary target is
+      a Fire tablet, and stock Fire OS has no Play Store. Ship through several
+      channels, in this order:
+      - Direct APK on GitHub Releases — works on any Android or Fire device,
+        available immediately, no gatekeeper.
+      - Amazon Appstore — reaches stock Fire tablets, which is what other
+        families in the SLT team's caseload will have.
+      - Google Play — reaches ordinary Android devices and Kyle's tablet, which
+        has Play sideloaded. Requires privacy policy, Data Safety declaration,
+        Families policy compliance and a content rating.
+      - F-Droid — natural home for a GPL-3.0 app with no proprietary
+        dependencies, and reaches users who avoid app stores entirely.
+- [ ] Verify the app runs on stock Fire OS with no Google Play Services present.
 
 ## Phase 4 — Growth
 

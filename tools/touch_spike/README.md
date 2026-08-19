@@ -26,10 +26,34 @@ Live on screen: the contact ellipse for each active pointer, so you can see
 immediately whether a palm draws a bigger ellipse than a fingertip, without
 waiting to analyse the CSV.
 
+## Also: the speech check
+
+The **Speech check** button opens a second probe that enumerates the device's
+installed TTS engines, languages and voices, and lets each one be auditioned
+with phrases a real first board would use ("I want a drink", "more please",
+"all done").
+
+This matters because the primary target is an Amazon Fire tablet. Fire OS does
+not ship Google's TTS engine. Kyle's tablet has the Play Store sideloaded so
+Google TTS can be installed there, but stock Fire tablets — which is what other
+families will have — do not, and sideloaded Play Services can break on a Fire OS
+update. So what speech is actually available gets measured on each device
+rather than assumed.
+
+Use the pitch slider to judge whether raising pitch produces something that
+sounds like a child, or merely a distorted adult. Genuine child voices are
+scarce on every platform, and this is the usual workaround.
+
 ## Capturing Kyle's data
 
 1. Enable Developer Options and USB debugging on the tablet, connect it, and
    accept the debugging prompt.
+
+   **On a Fire tablet:** Settings → Device Options → tap *Serial Number* seven
+   times to reveal Developer Options, then enable *USB debugging*. You may also
+   need Settings → Security & Privacy → *Apps from Unknown Sources* to install
+   outside the Amazon Appstore.
+
 2. Install:
    ```
    flutter build apk --debug
@@ -60,6 +84,15 @@ waiting to analyse the CSV.
 Watch the coloured verdict line at the bottom. Green means the hardware reports
 a varying radius and palm mode is viable. Amber means it reports a constant
 placeholder. Red means it reports nothing.
+
+6. Run the **Speech check** too, on the same visit, and note the engine name
+   and how the voices sound. Worth doing on the rugged phones as well — they
+   may have different engines installed.
+
+Do the capture on **all three devices** if you can. The tablet is primary, but
+the phones have different screens and probably different touch controllers, and
+the design in `docs/DESIGN.md` 13.2 depends on knowing how badly palm mode
+degrades on a small screen.
 
 ## Reading the CSV
 

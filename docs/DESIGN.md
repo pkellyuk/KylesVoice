@@ -398,8 +398,8 @@ A concrete first configuration, for review by the SLT team:
 
 | Setting | Value | Rationale |
 |---|---|---|
-| Grid | 4 x 3 (12 cells), landscape tablet | Target grid, fixed forever |
-| Populated at start | 4-6 cells | Room to grow without ever moving anything |
+| Grid | 3 x 2 (6 cells), landscape — **provisional, see section 13** | Constrained by an 8-inch screen and palm-sized contacts |
+| Populated at start | 3-4 cells | Room to grow without ever moving anything |
 | Utterance mode | Immediate | Tightest possible feedback loop for a first system |
 | Sentence bar | Hidden | Not yet meaningful; enable at multi-word stage |
 | Labels | Shown, small, below image | Incidental literacy exposure |
@@ -412,3 +412,85 @@ A concrete first configuration, for review by the SLT team:
 
 Initial vocabulary selection is for the SLT team to determine, not for us. The
 structure above is built to accept whatever they recommend.
+
+---
+
+## 13. Target devices
+
+Kyle's actual hardware, which constrains several decisions above:
+
+| Device | Role | Notes |
+|---|---|---|
+| Amazon Fire HD 8 | Primary | 8-inch, 1280x800. Fire OS, with Google Play Store sideloaded |
+| Two rugged Android phones | Secondary, used in rotation | One charges while the other is in use |
+
+None are high-end, because he sometimes throws them. That is a design input,
+not an aside.
+
+### 13.1 The screen size problem
+
+An 8-inch 16:10 panel is roughly 172 x 108 mm of active area. If a palm contact
+is 40-50 mm across, the number of cells that can be reliably distinguished by
+contact-area resolution is small:
+
+- 172 / 50 gives about **3 columns**
+- 108 / 50 gives about **2 rows**
+
+Hence the revision from 4 x 3 down to **3 x 2** in section 12. Since grid
+dimensions are fixed forever (principle 2), getting this wrong is expensive, and
+a 12-cell grid on this hardware would mean cells barely larger than his hand.
+
+These figures are estimates. The touch spike reports the panel's true physical
+size in millimetres and measures his actual contact sizes, so the final grid is
+set from measurement, not from this arithmetic.
+
+### 13.2 The same board across different screen sizes
+
+The phones are far smaller than the tablet. This creates a real tension:
+
+- **Rows and columns must never change across devices.** Motor planning is
+  substantially spatial and relative; keeping the same 3 x 2 arrangement means
+  "drink is bottom-left" holds true on every device he uses.
+- **But physical cell size does change**, and on a phone a 3 x 2 grid gives
+  cells smaller than his palm, at which point contact-area resolution cannot
+  disambiguate anything.
+
+The resolution adopted: grid dimensions are a property of the **board set**, not
+of the device. Cells scale to fit whatever screen is present. On the phones,
+palm mode degrades gracefully toward "largest overlap wins" with a wider
+ambiguity threshold, and accuracy will genuinely be worse.
+
+**Open question for the SLT team:** is it better for the phones to carry the
+same 3 x 2 board at reduced accuracy, or to be treated as a parent-held backup
+voice rather than something Kyle operates independently? We have not assumed an
+answer.
+
+### 13.3 Fire OS
+
+Fire OS is a fork of Android, and differs in ways that matter:
+
+- **No Google Play Services or Play Store by default.** Kyle's tablet has the
+  Play Store sideloaded, so Google's TTS engine and Play distribution both work
+  *for him*. Stock Fire tablets, which is what other families will have, do not.
+- **Sideloaded Play Services can break on a Fire OS update.** The app must
+  therefore never depend on Play Services being present. It does not: TTS goes
+  through the standard Android `TextToSpeech` API, which works with whichever
+  engine is installed, and there are no Google SDKs in the project.
+- **Distribution cannot be Play Store alone.** See `ROADMAP.md`.
+- Speech capability is measured rather than assumed: the touch spike includes a
+  speech probe that enumerates the installed engines and voices on whatever
+  device it is run on.
+
+### 13.4 Durability
+
+He sometimes throws the devices. Beyond choosing rugged hardware, which is
+already done, the app must assume it can be killed abruptly at any moment:
+
+- **Board edits are committed immediately**, never held in memory pending a
+  "save" the parent might never reach.
+- **Process death must lose nothing** beyond the in-progress utterance.
+- **No modal state that survives a restart.** The app always reopens on the home
+  board, ready to speak.
+- Backups matter more than usual, because a device may simply stop existing.
+  This raises the priority of export/import: it is not only home-to-school
+  transfer, it is disaster recovery.
