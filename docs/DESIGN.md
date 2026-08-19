@@ -244,14 +244,31 @@ threshold (default 15%), the activation is **ambiguous**. Configurable response:
 
 Start Kyle on `nearest`, and revisit with the SLT team after observation.
 
-### 5.3 Multi-touch lockout
+### 5.3 Multi-touch handling
 
-A slap frequently registers several pointers within milliseconds.
+> **Superseded by measurement.** See `FINDINGS-TOUCH.md`. The scheme originally
+> described here — take the first pointer down as authoritative and ignore the
+> rest — suppresses double-firing correctly but selects the wrong target. In two
+> of three measured slaps the first contact to register was not the largest, so
+> first-pointer-wins picks an arbitrary fingertip rather than the heel of the
+> hand.
 
-- Take the **first** pointer down as authoritative.
-- Ignore additional pointers until all pointers are released.
-- Apply a **post-activation lockout** after each activation (default 800 ms)
-  during which no further activation can occur, killing bounce and double-fire.
+Real measurement shows a slap is **not one large contact**. Every captured slap
+registered as **six separate simultaneous contacts** — fingers, knuckles and
+heel each landing as their own pointer — scattered across roughly 42 x 46 mm.
+Half of those contacts are indistinguishable from a deliberate fingertip tap,
+because they are fingertips.
+
+The design therefore treats simultaneous contacts as **one composite contact**:
+
+- Gather every pointer going down within a **coalescing window** (default 50 ms).
+- Resolve the composite against the grid, weighting each contact by its area.
+- Apply the **post-activation lockout** (default 800 ms) to the composite, not
+  to each pointer, so a single slap produces exactly one activation.
+
+Concurrent pointer count is itself a strong signal: six contacts inside 16 ms is
+unambiguously a slap, where deliberate tapping produced one. This is a more
+reliable palm indicator than any single contact's radius.
 
 ### 5.4 Activation timing
 
