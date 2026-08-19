@@ -57,7 +57,11 @@ Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
       lockout and dwell. 77 tests, including replay of the real captures in
       `docs/captures/`. Calibration constants still to be set from Kyle's own
       data.
-- [ ] Wire the resolver into a Flutter widget layer and verify on device.
+- [x] Wire the resolver into a Flutter widget layer and verify on device —
+      `app/`. Renders the fixed grid with empty cells preserved, feeds real
+      pointer geometry through the coalescer and resolver, speaks through the
+      platform engine, and carries a parent-gated diagnostics overlay.
+      Confirmed working on a Galaxy S24 and a tablet emulator.
 - [ ] Settle `lockoutMillis` from Kyle's data. The captures show the default
       800 ms merges deliberately repeated slaps into one activation â€” correct
       for a rebounding hand, wrong for a child repeating a word on purpose.

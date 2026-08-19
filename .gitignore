@@ -32,3 +32,7 @@ tools/touch_spike/emulator_capture.png
 # Real capture data is committed deliberately under docs/captures/ as evidence
 # and as fixtures for the resolver. Only the working pull directory is ignored.
 !docs/captures/*.csv
+
+# App build output
+app/board_*.png
+tools/touch_spike/*.png
