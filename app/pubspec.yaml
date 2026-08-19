@@ -49,6 +49,11 @@ dependencies:
   # the platform.
   path_provider: ^2.1.4
 
+  # Camera capture and gallery selection. Uses the system camera app rather than
+  # an in-app camera, so no CAMERA permission is declared and there is no
+  # runtime permission prompt for a parent to navigate.
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

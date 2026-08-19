@@ -58,6 +58,9 @@ class BoardCodec {
               'speech': c.speech,
               'glyph': c.glyph,
               'colourArgb': c.colourArgb,
+              'photoFile': c.photoFile,
+              'imageMode': c.imageMode.name,
+              'blend': c.blend,
               'kind': c.kind.name,
               'rowSpan': c.rowSpan,
               'colSpan': c.colSpan,
@@ -172,6 +175,9 @@ class BoardCodec {
             speech: _asString(entry['speech'], ''),
             glyph: _asString(entry['glyph'], ''),
             colourArgb: _asInt(entry['colourArgb'], 0xFF4FA3D1),
+            photoFile: _asString(entry['photoFile'], ''),
+            imageMode: _asImageMode(entry['imageMode']),
+            blend: _asDouble(entry['blend'], 0).clamp(0.0, 1.0),
             kind: _asKind(entry['kind']),
             rowSpan: _asInt(entry['rowSpan'], 1).clamp(1, rows),
             colSpan: _asInt(entry['colSpan'], 1).clamp(1, cols),
@@ -192,6 +198,30 @@ class BoardCodec {
       ),
       problems: problems,
     );
+  }
+
+  static ImageMode _asImageMode(Object? value) {
+    final String name = _asString(value, ImageMode.photo.name);
+
+    for (final ImageMode mode in ImageMode.values) {
+      if (mode.name == name) {
+        return mode;
+      }
+    }
+
+    return ImageMode.photo;
+  }
+
+  static double _asDouble(Object? value, double fallback) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    if (value is String) {
+      return double.tryParse(value) ?? fallback;
+    }
+
+    return fallback;
   }
 
   static CardKind _asKind(Object? value) {

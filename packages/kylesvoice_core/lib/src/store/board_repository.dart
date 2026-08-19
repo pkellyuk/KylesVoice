@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../model/board.dart';
 import '../model/board_codec.dart';
+import 'media_store.dart';
 
 /// The outcome of loading a board.
 class BoardLoadResult {
@@ -55,6 +56,11 @@ class BoardRepository {
 
   File get tempFile =>
       File('${directory.path}${Platform.pathSeparator}$fileName$tempSuffix');
+
+  /// Photographs live in a `media` subdirectory beside the board file, so a
+  /// board and its images form one self-contained folder that can be copied,
+  /// backed up or exported together.
+  MediaStore get media => MediaStore.under(directory);
 
   bool get hasSavedBoard => file.existsSync();
 

@@ -14,6 +14,7 @@ export 'src/model/board.dart';
 export 'src/model/board_card.dart';
 export 'src/model/board_codec.dart';
 export 'src/store/board_repository.dart';
+export 'src/store/media_store.dart';
 export 'src/touch/composite_contact.dart';
 export 'src/touch/contact_coalescer.dart';
 export 'src/touch/resolver_config.dart';

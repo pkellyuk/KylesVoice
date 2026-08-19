@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
 import '../log.dart';
+import '../services/photo_service.dart';
 
 /// What the card editor was asked to do.
 enum CardEditAction { save, delete, cancel }
@@ -23,7 +26,19 @@ class CardEditor extends StatefulWidget {
   final CellAddress address;
   final BoardCard? existing;
 
-  const CardEditor({super.key, required this.address, this.existing});
+  /// Where photographs are filed. Null when storage is unavailable.
+  final MediaStore? media;
+
+  /// Absolute path of the media directory, for previewing.
+  final String? mediaDirectory;
+
+  const CardEditor({
+    super.key,
+    required this.address,
+    this.existing,
+    this.media,
+    this.mediaDirectory,
+  });
 
   @override
   State<CardEditor> createState() => _CardEditorState();
@@ -63,10 +78,18 @@ class _CardEditorState extends State<CardEditor> {
     '\u{1F915}',
   ];
 
+  final PhotoService _photos = PhotoService();
+
   late TextEditingController _label;
   late TextEditingController _speech;
   late TextEditingController _glyph;
   late int _colour;
+  late String _photoFile;
+  late ImageMode _imageMode;
+  late double _blend;
+
+  bool _busy = false;
+  String _photoStatus = '';
 
   @override
   void initState() {
@@ -79,6 +102,9 @@ class _CardEditorState extends State<CardEditor> {
     _speech = TextEditingController(text: existing?.speech ?? '');
     _glyph = TextEditingController(text: existing?.glyph ?? _glyphs.first);
     _colour = existing?.colourArgb ?? _palette.first;
+    _photoFile = existing?.photoFile ?? '';
+    _imageMode = existing?.imageMode ?? ImageMode.photo;
+    _blend = existing?.blend ?? 0;
 
     Log.exit('_CardEditorState.initState', 'editing=${existing != null}');
   }
@@ -116,6 +142,9 @@ class _CardEditorState extends State<CardEditor> {
       speech: speech,
       glyph: _glyph.text.trim(),
       colourArgb: _colour,
+      photoFile: _photoFile,
+      imageMode: _imageMode,
+      blend: _blend,
     );
 
     Navigator.of(context)
@@ -169,6 +198,108 @@ class _CardEditorState extends State<CardEditor> {
     Log.exit('_CardEditorState._delete', 'deleted');
   }
 
+  Future<void> _attachPhoto({required bool fromCamera}) async {
+    Log.enter('_CardEditorState._attachPhoto', 'fromCamera=$fromCamera');
+
+    if (_busy) {
+      Log.exit('_CardEditorState._attachPhoto', 'already busy');
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _photoStatus = '';
+    });
+
+    final PhotoResult result = fromCamera
+        ? await _photos.capture(widget.media)
+        : await _photos.choose(widget.media);
+
+    if (mounted == false) {
+      Log.exit('_CardEditorState._attachPhoto', 'unmounted');
+      return;
+    }
+
+    setState(() {
+      _busy = false;
+
+      if (result.succeeded) {
+        _photoFile = result.fileName;
+
+        // A photograph is almost always what a parent wants to see the moment
+        // they attach one, whatever the mode was set to before.
+        if (_imageMode == ImageMode.symbol) {
+          _imageMode = ImageMode.photo;
+        }
+
+        _photoStatus = 'Photograph attached.';
+        return;
+      }
+
+      if (result.cancelled) {
+        _photoStatus = '';
+        return;
+      }
+
+      _photoStatus = result.failure;
+    });
+
+    Log.exit('_CardEditorState._attachPhoto', 'file=$_photoFile');
+  }
+
+  void _removePhoto() {
+    Log.enter('_CardEditorState._removePhoto', 'file=$_photoFile');
+
+    setState(() {
+      // The file itself is left on disk. Undo has to be able to bring the card
+      // back with its picture intact, and orphans are pruned separately.
+      _photoFile = '';
+      _imageMode = ImageMode.symbol;
+      _photoStatus = 'Photograph removed from this card.';
+    });
+
+    Log.exit('_CardEditorState._removePhoto');
+  }
+
+  void _onImageModeChanged(ImageMode? mode) {
+    Log.enter('_CardEditorState._onImageModeChanged', 'mode=$mode');
+
+    if (mode == null) {
+      Log.warn('_CardEditorState._onImageModeChanged', 'null mode ignored');
+      Log.exit('_CardEditorState._onImageModeChanged');
+      return;
+    }
+
+    setState(() {
+      _imageMode = mode;
+    });
+
+    Log.exit('_CardEditorState._onImageModeChanged', 'mode=${mode.name}');
+  }
+
+  /// Resolves the photograph for preview, or null if there is not one to show.
+  File? get _photoFileHandle {
+    if (_photoFile.trim().isEmpty) {
+      return null;
+    }
+
+    final String? directory = widget.mediaDirectory;
+
+    if (directory == null) {
+      return null;
+    }
+
+    final File file = File(
+      '$directory${Platform.pathSeparator}${_photoFile.trim()}',
+    );
+
+    if (file.existsSync() == false) {
+      return null;
+    }
+
+    return file;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,15 +348,37 @@ class _CardEditorState extends State<CardEditor> {
                 'usually wants to say "I need the toilet".',
           ),
           const SizedBox(height: 20),
-          _sectionLabel('PICTURE'),
+          _sectionLabel('PHOTOGRAPH'),
+          const SizedBox(height: 6),
+          const Text(
+            "A photograph of the real thing — their own cup, their own "
+            'school, their own people — is usually more motivating than a '
+            'stock symbol for a first board.',
+            style: TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+          const SizedBox(height: 10),
+          _buildPhotoControls(),
+          if (_photoStatus.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              _photoStatus,
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+          if (_photoFile.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 16),
+            _buildImageModeControls(),
+          ],
+          const SizedBox(height: 20),
+          _sectionLabel('SYMBOL'),
           const SizedBox(height: 8),
           _field(
             controller: _glyph,
             label: 'Symbol',
             hint: '\u{1F964}',
             helper:
-                'Photographs and a symbol library are coming; for now, '
-                'pick one below or type any emoji.',
+                'A bundled symbol library is coming; for now, pick one below '
+                'or type any emoji.',
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -303,15 +456,7 @@ class _CardEditorState extends State<CardEditor> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  _glyph.text.isEmpty ? ' ' : _glyph.text,
-                  style: const TextStyle(fontSize: 72),
-                ),
-              ),
-            ),
+            Flexible(child: _buildPreviewArtwork()),
             const SizedBox(height: 6),
             Text(
               _label.text,
@@ -329,6 +474,175 @@ class _CardEditorState extends State<CardEditor> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPhotoControls() {
+    if (widget.media == null) {
+      return const Text(
+        'Photographs are unavailable because storage could not be opened.',
+        style: TextStyle(color: Color(0xFFE57373), fontSize: 12),
+      );
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        FilledButton.icon(
+          onPressed: _busy ? null : () => _attachPhoto(fromCamera: true),
+          icon: const Icon(Icons.photo_camera_outlined),
+          label: const Text('Take a photo'),
+        ),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : () => _attachPhoto(fromCamera: false),
+          icon: const Icon(Icons.photo_library_outlined),
+          label: const Text('Choose a photo'),
+        ),
+        if (_photoFile.isNotEmpty)
+          TextButton.icon(
+            onPressed: _busy ? null : _removePhoto,
+            icon: const Icon(Icons.hide_image_outlined),
+            label: const Text('Remove photo'),
+          ),
+        if (_busy)
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+      ],
+    );
+  }
+
+  /// Controls for combining the photograph with the symbol.
+  ///
+  /// The blend slider exists to support a deliberate progression: begin on a
+  /// photograph of the child's own cup, and move gradually toward the abstract
+  /// symbol so the concept generalises beyond that one object. The card never
+  /// changes position or label while this happens.
+  Widget _buildImageModeControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _sectionLabel('PHOTO AND SYMBOL'),
+        const SizedBox(height: 8),
+        SegmentedButton<ImageMode>(
+          segments: const <ButtonSegment<ImageMode>>[
+            ButtonSegment<ImageMode>(
+              value: ImageMode.photo,
+              label: Text('Photo'),
+            ),
+            ButtonSegment<ImageMode>(
+              value: ImageMode.symbol,
+              label: Text('Symbol'),
+            ),
+            ButtonSegment<ImageMode>(
+              value: ImageMode.both,
+              label: Text('Both'),
+            ),
+            ButtonSegment<ImageMode>(
+              value: ImageMode.blend,
+              label: Text('Fade'),
+            ),
+          ],
+          selected: <ImageMode>{_imageMode},
+          onSelectionChanged: (Set<ImageMode> selection) =>
+              _onImageModeChanged(selection.firstOrNull),
+        ),
+        if (_imageMode == ImageMode.blend) ...<Widget>[
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              const Text(
+                'Photo',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              Expanded(
+                child: Slider(
+                  value: _blend.clamp(0.0, 1.0),
+                  onChanged: (double v) => setState(() => _blend = v),
+                ),
+              ),
+              const Text(
+                'Symbol',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+          const Text(
+            'Move this a little at a time, over weeks. The card keeps its '
+            'position and its word throughout.',
+            style: TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// The preview's artwork, mirroring exactly how the card will be drawn on
+  /// the board so a parent can judge the result before saving.
+  Widget _buildPreviewArtwork() {
+    final Widget symbol = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        _glyph.text.isEmpty ? ' ' : _glyph.text,
+        style: const TextStyle(fontSize: 72),
+      ),
+    );
+
+    final File? photo = _photoFileHandle;
+
+    if (photo == null) {
+      return symbol;
+    }
+
+    final Widget image = ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.file(
+        photo,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>
+            symbol,
+      ),
+    );
+
+    if (_imageMode == ImageMode.both) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Expanded(child: image),
+          const SizedBox(width: 6),
+          Expanded(child: symbol),
+        ],
+      );
+    }
+
+    final double blend = _blend.clamp(0.0, 1.0);
+    final double photoOpacity = switch (_imageMode) {
+      ImageMode.photo => 1.0,
+      ImageMode.symbol => 0.0,
+      ImageMode.both => 1.0,
+      ImageMode.blend => 1 - blend,
+    };
+    final double symbolOpacity = switch (_imageMode) {
+      ImageMode.photo => 0.0,
+      ImageMode.symbol => 1.0,
+      ImageMode.both => 1.0,
+      ImageMode.blend => blend,
+    };
+
+    return Stack(
+      fit: StackFit.passthrough,
+      alignment: Alignment.center,
+      children: <Widget>[
+        Opacity(opacity: photoOpacity, child: image),
+        Opacity(opacity: symbolOpacity, child: symbol),
+      ],
     );
   }
 

@@ -179,8 +179,12 @@ class _BoardScreenState extends State<BoardScreen> {
 
     final Board? edited = await Navigator.of(context).push<Board>(
       MaterialPageRoute<Board>(
-        builder: (BuildContext context) =>
-            EditorScreen(board: _board, onSave: _storage.save),
+        builder: (BuildContext context) => EditorScreen(
+          board: _board,
+          onSave: _storage.save,
+          media: _storage.media,
+          mediaDirectory: _storage.mediaDirectory,
+        ),
       ),
     );
 
@@ -225,6 +229,7 @@ class _BoardScreenState extends State<BoardScreen> {
                 onActivated: _onActivated,
                 onResolved: _onResolved,
                 showGridLines: _showDiagnostics,
+                mediaDirectory: _storage.mediaDirectory,
               ),
             ),
             // The parent gate lives in a corner with no visible affordance, so

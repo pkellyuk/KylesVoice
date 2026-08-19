@@ -67,7 +67,9 @@ Goal: Kyle taps a card and it speaks, reliably, with his own photographs.
       for a rebounding hand, wrong for a child repeating a word on purpose.
 - [ ] Speak-on-tap with platform TTS; voice, rate, pitch selection.
 - [ ] Card model with photo, label and independent spoken text.
-- [ ] Photo capture from camera into a card.
+- [x] Photo capture from camera or gallery into a card, downscaled at
+      capture, filed atomically beside the board. Verified on device: captured,
+      saved, restarted, still there.
 - [x] Parent-gated editor: add, edit and remove cards, change grid size with
       an explicit warning naming what would be lost, one-level undo.
 - [x] Local persistence — atomic JSON writes with an automatic backup and
@@ -83,7 +85,10 @@ enough that the SLT team is satisfied.
 
 Goal: what the SLT team needs to actually run a programme with it.
 
-- [ ] Dual-image cards: symbol library, `both` and `blend` modes.
+- [x] Dual-image cards: `photo`, `symbol`, `both` and `blend` modes with a
+      per-card cross-fade slider, so a card can start on the child's own cup
+      and move gradually to an abstract symbol without ever changing position.
+- [ ] Bundled symbol library to blend toward. Emoji are a stand-in for now.
 - [ ] Board-wide blend slider for staged symbol transition.
 - [ ] Bundled symbol set with search and attribution tracking.
 - [ ] Recorded per-card audio.

@@ -16,6 +16,12 @@ class BoardStorage {
 
   bool get isReady => _repository != null;
 
+  /// Where photographs live, or null if storage is unavailable.
+  MediaStore? get media => _repository?.media;
+
+  /// Absolute path of the media directory, for resolving card photographs.
+  String? get mediaDirectory => _repository?.media.directory.path;
+
   /// Prepares storage. Safe to call more than once.
   ///
   /// Never throws: if no directory can be found the app still runs, it simply

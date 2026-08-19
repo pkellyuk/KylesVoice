@@ -17,7 +17,20 @@ class EditorScreen extends StatefulWidget {
   /// Persists the board. Returns an empty string on success, or a reason.
   final Future<String> Function(Board board) onSave;
 
-  const EditorScreen({super.key, required this.board, required this.onSave});
+  /// Where photographs are filed. Null when storage is unavailable, in which
+  /// case the photo controls explain themselves rather than silently failing.
+  final MediaStore? media;
+
+  /// Absolute path of the media directory, for previewing photographs.
+  final String? mediaDirectory;
+
+  const EditorScreen({
+    super.key,
+    required this.board,
+    required this.onSave,
+    this.media,
+    this.mediaDirectory,
+  });
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -104,8 +117,12 @@ class _EditorScreenState extends State<EditorScreen> {
     final CardEditResult? result = await Navigator.of(context)
         .push<CardEditResult>(
           MaterialPageRoute<CardEditResult>(
-            builder: (BuildContext context) =>
-                CardEditor(address: address, existing: existing),
+            builder: (BuildContext context) => CardEditor(
+              address: address,
+              existing: existing,
+              media: widget.media,
+              mediaDirectory: widget.mediaDirectory,
+            ),
           ),
         );
 

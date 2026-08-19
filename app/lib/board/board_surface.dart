@@ -42,6 +42,10 @@ class BoardSurface extends StatefulWidget {
 
   final bool showGridLines;
 
+  /// Absolute path of the board's media directory, so cards can resolve the
+  /// relative photograph file names they store.
+  final String? mediaDirectory;
+
   const BoardSurface({
     super.key,
     required this.board,
@@ -49,6 +53,7 @@ class BoardSurface extends StatefulWidget {
     required this.onActivated,
     this.onResolved,
     this.showGridLines = false,
+    this.mediaDirectory,
   });
 
   @override
@@ -315,6 +320,7 @@ class _BoardSurfaceState extends State<BoardSurface> {
               card: card,
               isFlashing: _flashing == cell.address,
               showOutline: widget.showGridLines,
+              mediaDirectory: widget.mediaDirectory,
             ),
           ),
         ),

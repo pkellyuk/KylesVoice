@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
@@ -12,11 +14,17 @@ class CardTile extends StatelessWidget {
   final bool isFlashing;
   final bool showOutline;
 
+  /// Absolute path of the board's media directory, used to resolve the relative
+  /// file name a card stores. Null when storage is unavailable, in which case
+  /// cards fall back to their symbol.
+  final String? mediaDirectory;
+
   const CardTile({
     super.key,
     required this.card,
     required this.isFlashing,
     this.showOutline = false,
+    this.mediaDirectory,
   });
 
   @override
@@ -72,22 +80,11 @@ class CardTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                // Scale the artwork to whatever room is left after the label,
-                // rather than assuming a fixed proportion. Cell sizes vary
-                // enormously between an 8-inch tablet and a phone, and a card
-                // that overflows is a card whose picture is cut off.
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      resolved.glyph,
-                      style: const TextStyle(fontSize: 96),
-                    ),
-                  ),
-                ),
+                Flexible(child: _buildArtwork(resolved)),
                 SizedBox(height: constraints.maxHeight * 0.03),
-                // Shown even though he cannot read: incidental exposure to print
-                // alongside the image is standard practice and costs nothing.
+                // Shown even for a non-reading user: incidental exposure to
+                // print alongside the image is standard practice and costs
+                // nothing.
                 Text(
                   resolved.label,
                   textAlign: TextAlign.center,
@@ -105,6 +102,90 @@ class CardTile extends StatelessWidget {
               ],
             ),
           );
+        },
+      ),
+    );
+  }
+
+  /// Draws the photograph, the symbol, or both, according to the card's mode.
+  ///
+  /// The blend mode supports a deliberate clinical progression: a card can begin
+  /// as a photograph of the child's own cup and shift over weeks toward the
+  /// abstract symbol for "drink", so the concept generalises beyond that one
+  /// object — without the card ever changing position or label.
+  Widget _buildArtwork(BoardCard resolved) {
+    final Widget symbol = _buildSymbol(resolved);
+    final Widget? photo = _buildPhoto(resolved);
+
+    if (photo == null) {
+      return symbol;
+    }
+
+    if (resolved.effectiveImageMode == ImageMode.both) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Expanded(child: photo),
+          const SizedBox(width: 6),
+          Expanded(child: symbol),
+        ],
+      );
+    }
+
+    return Stack(
+      fit: StackFit.passthrough,
+      alignment: Alignment.center,
+      children: <Widget>[
+        Opacity(opacity: resolved.photoOpacity, child: photo),
+        Opacity(opacity: resolved.symbolOpacity, child: symbol),
+      ],
+    );
+  }
+
+  Widget _buildSymbol(BoardCard resolved) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        resolved.glyph.isEmpty ? ' ' : resolved.glyph,
+        style: const TextStyle(fontSize: 96),
+      ),
+    );
+  }
+
+  /// Returns null when there is no photograph or it cannot be located.
+  ///
+  /// A missing file falls back to the symbol rather than showing a broken
+  /// image: a card that still says the right word is far better than one that
+  /// looks broken to a child who cannot ask why.
+  Widget? _buildPhoto(BoardCard resolved) {
+    if (resolved.hasPhoto == false) {
+      return null;
+    }
+
+    final String? directory = mediaDirectory;
+
+    if (directory == null) {
+      return null;
+    }
+
+    final File file = File(
+      '$directory${Platform.pathSeparator}${resolved.photoFile.trim()}',
+    );
+
+    if (file.existsSync() == false) {
+      return null;
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.file(
+        file,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
+          return _buildSymbol(resolved);
         },
       ),
     );
