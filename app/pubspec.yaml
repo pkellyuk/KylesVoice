@@ -54,6 +54,10 @@ dependencies:
   # runtime permission prompt for a parent to navigate.
   image_picker: ^1.1.2
 
+  # Renders the bundled Mulberry symbols, which are SVG so they stay sharp at
+  # any cell size from a phone to a tablet.
+  flutter_svg: ^2.0.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,6 +79,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    # Mulberry Symbols, by Garry Paxton and Steve Lee, CC BY-SA 4.0.
+    # Imported by tools/import_symbols.dart; see THIRD-PARTY-ASSETS.md.
+    - assets/symbols/index.json
+    - assets/symbols/LICENSE.txt
+    - assets/symbols/svg/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

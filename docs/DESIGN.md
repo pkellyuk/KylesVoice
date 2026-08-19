@@ -92,7 +92,9 @@ An explicit requirement from the SLT team, and a genuine differentiator.
 > **Implemented.** Sections 3.1 and 3.2 are built: cards carry a photograph and
 > a symbol with `photo` / `symbol` / `both` / `blend` modes and a per-card
 > cross-fade. The board-wide slider and scheduled progression in 3.2 are not yet
-> built, and the bundled symbol set in 3.4 is still stood in for by emoji.
+> built. The bundled symbol set in 3.4 is now the full Mulberry set under
+> CC BY-SA 4.0; see `THIRD-PARTY-ASSETS.md`, including the core vocabulary it
+> is missing.
 
 ### 3.1 Dual-image cards
 

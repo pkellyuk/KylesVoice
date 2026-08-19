@@ -42,8 +42,16 @@ class BoardCard {
   /// can say "I need the toilet".
   final String speech;
 
-  /// Placeholder artwork until the symbol library and photo capture exist.
+  /// Emoji fallback, used when no bundled symbol is chosen.
+  ///
+  /// Kept alongside [symbolFile] rather than replaced by it: emoji need no
+  /// assets, work when the symbol set fails to load, and are quicker for a
+  /// parent adding a card in a hurry.
   final String glyph;
+
+  /// File name of a bundled symbol, e.g. `drink.svg`. Empty when none is
+  /// chosen, in which case [glyph] is drawn instead.
+  final String symbolFile;
 
   /// File name of the card's photograph, relative to the board's media
   /// directory. Empty when the card has no photograph.
@@ -83,6 +91,7 @@ class BoardCard {
     required this.speech,
     required this.glyph,
     required this.colourArgb,
+    this.symbolFile = '',
     this.photoFile = '',
     this.imageMode = ImageMode.photo,
     this.blend = 0,
@@ -93,6 +102,8 @@ class BoardCard {
   });
 
   bool get hasPhoto => photoFile.trim().isNotEmpty;
+
+  bool get hasSymbolFile => symbolFile.trim().isNotEmpty;
 
   /// The mode actually used for drawing.
   ///
@@ -149,6 +160,7 @@ class BoardCard {
     String? label,
     String? speech,
     String? glyph,
+    String? symbolFile,
     int? colourArgb,
     String? photoFile,
     ImageMode? imageMode,
@@ -163,6 +175,7 @@ class BoardCard {
       label: label ?? this.label,
       speech: speech ?? this.speech,
       glyph: glyph ?? this.glyph,
+      symbolFile: symbolFile ?? this.symbolFile,
       colourArgb: colourArgb ?? this.colourArgb,
       photoFile: photoFile ?? this.photoFile,
       imageMode: imageMode ?? this.imageMode,
@@ -184,6 +197,7 @@ class BoardCard {
       other.label == label &&
       other.speech == speech &&
       other.glyph == glyph &&
+      other.symbolFile == symbolFile &&
       other.colourArgb == colourArgb &&
       other.photoFile == photoFile &&
       other.imageMode == imageMode &&
@@ -199,6 +213,7 @@ class BoardCard {
     label,
     speech,
     glyph,
+    symbolFile,
     colourArgb,
     photoFile,
     imageMode,

@@ -1,10 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
 
 import '../log.dart';
 import '../services/photo_service.dart';
+import '../services/symbol_library.dart';
+import 'symbol_picker.dart';
 
 /// What the card editor was asked to do.
 enum CardEditAction { save, delete, cancel }
@@ -85,6 +88,7 @@ class _CardEditorState extends State<CardEditor> {
   late TextEditingController _glyph;
   late int _colour;
   late String _photoFile;
+  late String _symbolFile;
   late ImageMode _imageMode;
   late double _blend;
 
@@ -103,6 +107,7 @@ class _CardEditorState extends State<CardEditor> {
     _glyph = TextEditingController(text: existing?.glyph ?? _glyphs.first);
     _colour = existing?.colourArgb ?? _palette.first;
     _photoFile = existing?.photoFile ?? '';
+    _symbolFile = existing?.symbolFile ?? '';
     _imageMode = existing?.imageMode ?? ImageMode.photo;
     _blend = existing?.blend ?? 0;
 
@@ -141,6 +146,7 @@ class _CardEditorState extends State<CardEditor> {
       label: label,
       speech: speech,
       glyph: _glyph.text.trim(),
+      symbolFile: _symbolFile,
       colourArgb: _colour,
       photoFile: _photoFile,
       imageMode: _imageMode,
@@ -261,6 +267,52 @@ class _CardEditorState extends State<CardEditor> {
     Log.exit('_CardEditorState._removePhoto');
   }
 
+  Future<void> _chooseSymbol() async {
+    Log.enter('_CardEditorState._chooseSymbol');
+
+    final SymbolEntry? chosen = await Navigator.of(context).push<SymbolEntry>(
+      MaterialPageRoute<SymbolEntry>(
+        // Seed the search with the card's word: a parent adding "drink"
+        // almost always wants the drink symbol, and typing it twice is
+        // friction for no gain.
+        builder: (BuildContext context) =>
+            SymbolPicker(initialQuery: _label.text.trim()),
+      ),
+    );
+
+    if (chosen == null) {
+      Log.exit('_CardEditorState._chooseSymbol', 'cancelled');
+      return;
+    }
+
+    if (mounted == false) {
+      Log.exit('_CardEditorState._chooseSymbol', 'unmounted');
+      return;
+    }
+
+    setState(() {
+      _symbolFile = chosen.file;
+
+      // Choosing a symbol for a card that has a photograph almost always means
+      // the parent wants to see the symbol, or to fade toward it.
+      if (_photoFile.isNotEmpty && _imageMode == ImageMode.photo) {
+        _imageMode = ImageMode.blend;
+      }
+    });
+
+    Log.exit('_CardEditorState._chooseSymbol', 'symbol=${chosen.file}');
+  }
+
+  void _clearSymbol() {
+    Log.enter('_CardEditorState._clearSymbol', 'was=$_symbolFile');
+
+    setState(() {
+      _symbolFile = '';
+    });
+
+    Log.exit('_CardEditorState._clearSymbol');
+  }
+
   void _onImageModeChanged(ImageMode? mode) {
     Log.enter('_CardEditorState._onImageModeChanged', 'mode=$mode');
 
@@ -372,13 +424,16 @@ class _CardEditorState extends State<CardEditor> {
           const SizedBox(height: 20),
           _sectionLabel('SYMBOL'),
           const SizedBox(height: 8),
+          _buildSymbolControls(),
+          const SizedBox(height: 16),
           _field(
             controller: _glyph,
-            label: 'Symbol',
+            label: 'Emoji instead',
             hint: '\u{1F964}',
             helper:
-                'A bundled symbol library is coming; for now, pick one below '
-                'or type any emoji.',
+                'Used when no symbol is chosen. The symbol set has no picture '
+                'for some everyday words, so an emoji is sometimes the better '
+                'answer.',
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -474,6 +529,69 @@ class _CardEditorState extends State<CardEditor> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSymbolControls() {
+    final SymbolEntry? chosen = SymbolLibrary.catalog.byFile(_symbolFile);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        if (_symbolFile.isNotEmpty)
+          Container(
+            width: 72,
+            height: 72,
+            padding: const EdgeInsets.all(6),
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              // Mulberry artwork assumes a pale background; several symbols are
+              // mostly black line work that would vanish on the dark theme.
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SvgPicture.asset(
+              SymbolLibrary.assetFor(_symbolFile),
+              fit: BoxFit.contain,
+              placeholderBuilder: (BuildContext context) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  FilledButton.icon(
+                    onPressed: _chooseSymbol,
+                    icon: const Icon(Icons.emoji_symbols_outlined),
+                    label: Text(
+                      _symbolFile.isEmpty ? 'Choose a symbol' : 'Change symbol',
+                    ),
+                  ),
+                  if (_symbolFile.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: _clearSymbol,
+                      icon: const Icon(Icons.close),
+                      label: const Text('Remove symbol'),
+                    ),
+                ],
+              ),
+              if (chosen != null) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  '${chosen.name}  \u00b7  ${chosen.category}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -584,13 +702,28 @@ class _CardEditorState extends State<CardEditor> {
   /// The preview's artwork, mirroring exactly how the card will be drawn on
   /// the board so a parent can judge the result before saving.
   Widget _buildPreviewArtwork() {
-    final Widget symbol = FittedBox(
+    final Widget glyph = FittedBox(
       fit: BoxFit.scaleDown,
       child: Text(
         _glyph.text.isEmpty ? ' ' : _glyph.text,
         style: const TextStyle(fontSize: 72),
       ),
     );
+
+    final Widget symbol = _symbolFile.isEmpty
+        ? glyph
+        : Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SvgPicture.asset(
+              SymbolLibrary.assetFor(_symbolFile),
+              fit: BoxFit.contain,
+              placeholderBuilder: (BuildContext context) => glyph,
+            ),
+          );
 
     final File? photo = _photoFileHandle;
 

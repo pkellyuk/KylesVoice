@@ -88,9 +88,15 @@ Goal: what the SLT team needs to actually run a programme with it.
 - [x] Dual-image cards: `photo`, `symbol`, `both` and `blend` modes with a
       per-card cross-fade slider, so a card can start on the child's own cup
       and move gradually to an abstract symbol without ever changing position.
-- [ ] Bundled symbol library to blend toward. Emoji are a stand-in for now.
+- [x] Bundled symbol library — the full Mulberry set, 3,436 symbols under
+      CC BY-SA 4.0, imported reproducibly by `tools/import_symbols.dart` with
+      a searchable picker. Emoji retained as a fallback for the core words
+      Mulberry lacks.
+- [ ] Cover the core vocabulary Mulberry is missing (yes, no, stop, again,
+      please, thank you, hurt, mum, dad, like). Awaiting the SLT team's steer;
+      see `FOR-CLINICIANS.md`.
 - [ ] Board-wide blend slider for staged symbol transition.
-- [ ] Bundled symbol set with search and attribution tracking.
+- [x] Bundled symbol set with search and attribution tracking.
 - [ ] Recorded per-card audio.
 - [ ] Sentence bar and build-then-speak mode.
 - [ ] Export/import `.kvz` — home-to-school transfer.

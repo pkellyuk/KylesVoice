@@ -71,6 +71,38 @@ wrong word.
 Other adjustable settings: hold-to-activate time, gap size between cards,
 activate-on-press versus on-release, and repeat-activation lockout.
 
+## The bundled symbol set, and what it is missing
+
+The app ships the **Mulberry Symbol set**: 3,436 symbols across 117 categories,
+by Garry Paxton and Steve Lee, under a Creative Commons BY-SA 4.0 licence. It
+was chosen because its licence permits free redistribution with attribution and
+carries no non-commercial restriction, so board sets made with it can be shared
+onward without anyone needing permission.
+
+A card can carry a Mulberry symbol, a photograph, or both, and the fade control
+moves between them.
+
+**Please be aware of a real limitation.** Mulberry was designed with adult AAC
+users in mind. It is very strong on nouns — 2,973 of its 3,436 symbols — and
+correspondingly thin on the core vocabulary a first board leans on. We checked,
+and the following everyday words have **no symbol at all** in the set:
+
+> yes, no, stop, again, please, thank you, hurt / pain, mum, dad, like
+
+Some near neighbours do exist and may serve: `correct` and `cross` are the
+conventional tick and cross often used for yes and no; `finish` is there;
+`want, to`, `more`, `help, to`, `wait, to` and `toilet` are all present. Happy,
+sad and angry exist only as gendered variants ("happy lady", "happy man").
+
+For the missing words the app falls back to an emoji, or a photograph, and that
+is why the emoji option has been kept rather than removed.
+
+**We would value your steer on this.** Options as we see them: use emoji or
+photographs for those words; adopt the tick/cross convention for yes and no; or
+add a second symbol set. ARASAAC is the obvious candidate for the gaps and is
+far stronger on core vocabulary, but it is licensed non-commercially, which
+complicates sharing board sets onward. We have not made that call.
+
 ## What we would value your input on
 
 1. **Initial vocabulary and grid size.** Our starting proposal is a 4 x 3 grid

@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kylesvoice_core/kylesvoice_core.dart';
+
+import '../services/symbol_library.dart';
 
 /// One cell, occupied or empty.
 ///
@@ -142,12 +145,41 @@ class CardTile extends StatelessWidget {
     );
   }
 
+  /// Draws the card's symbol: a bundled Mulberry symbol if one is chosen,
+  /// otherwise the emoji fallback.
   Widget _buildSymbol(BoardCard resolved) {
+    if (resolved.hasSymbolFile) {
+      return _buildSvgSymbol(resolved);
+    }
+
+    return _buildGlyph(resolved);
+  }
+
+  Widget _buildGlyph(BoardCard resolved) {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Text(
         resolved.glyph.isEmpty ? ' ' : resolved.glyph,
         style: const TextStyle(fontSize: 96),
+      ),
+    );
+  }
+
+  Widget _buildSvgSymbol(BoardCard resolved) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        // Mulberry artwork is drawn for a pale background, and much of it is
+        // black line work that would disappear against a coloured card.
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: SvgPicture.asset(
+        SymbolLibrary.assetFor(resolved.symbolFile),
+        fit: BoxFit.contain,
+        // A symbol that fails to load falls back to the emoji rather than
+        // leaving a blank card.
+        placeholderBuilder: (BuildContext context) => _buildGlyph(resolved),
       ),
     );
   }

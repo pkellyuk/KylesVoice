@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'log.dart';
 import 'screens/board_screen.dart';
+import 'services/symbol_library.dart';
 
 Future<void> main() async {
   Log.enter('main');
@@ -20,6 +21,10 @@ Future<void> main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   Log.step('main', 'landscape locked, immersive mode enabled');
+
+  // Loaded once at startup rather than when the picker opens: the index is a
+  // few hundred kilobytes and a parent should not wait for it mid-edit.
+  await SymbolLibrary.load();
 
   runApp(const KylesVoiceApp());
 
