@@ -48,6 +48,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
   String _statusMessage = 'Ready. Touch anywhere to start capturing.';
   String _lastExportPath = '';
 
+  /// True on screens too small for the tablet-sized overlays. Set during build
+  /// from the actual constraints, and used to shrink type and padding.
+  bool _compact = false;
+
   @override
   void initState() {
     Log.enter('_CaptureScreenState.initState');
@@ -277,110 +281,167 @@ class _CaptureScreenState extends State<CaptureScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF101418),
       body: SafeArea(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: _onPointerEvent,
-                onPointerMove: _onPointerEvent,
-                onPointerUp: _onPointerEvent,
-                onPointerCancel: _onPointerEvent,
-                child: CustomPaint(
-                  painter: ContactPainter(
-                    live: _liveContacts.values.toList(growable: false),
-                    trail: List<TouchSample>.unmodifiable(_trail),
-                    fallbackRadius: _fallbackRadius,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The overlays were laid out for a tablet. On a phone in landscape
+            // there is barely 350dp of height, so they must shrink and scroll
+            // rather than collide with each other and hide the readouts.
+            _compact =
+                constraints.maxHeight < 560 || constraints.maxWidth < 900;
+
+            final double panelWidth = _compact
+                ? (constraints.maxWidth * 0.34).clamp(180.0, 300.0)
+                : 330.0;
+
+            // Leave room for the status bar along the bottom.
+            final double panelMaxHeight = constraints.maxHeight - 130;
+
+            return Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: Listener(
+                    behavior: HitTestBehavior.opaque,
+                    onPointerDown: _onPointerEvent,
+                    onPointerMove: _onPointerEvent,
+                    onPointerUp: _onPointerEvent,
+                    onPointerCancel: _onPointerEvent,
+                    child: CustomPaint(
+                      painter: ContactPainter(
+                        live: _liveContacts.values.toList(growable: false),
+                        trail: List<TouchSample>.unmodifiable(_trail),
+                        fallbackRadius: _fallbackRadius,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
                   ),
-                  child: const SizedBox.expand(),
                 ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              top: 12,
-              child: IgnorePointer(child: _buildStatsPanel(stats)),
-            ),
-            Positioned(right: 12, top: 12, child: _buildControls()),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: IgnorePointer(child: _buildStatusBar(stats)),
-            ),
-          ],
+                Positioned(
+                  left: 8,
+                  top: 8,
+                  child: IgnorePointer(
+                    child: _scrollable(
+                      maxHeight: panelMaxHeight,
+                      child: _buildStatsPanel(stats, panelWidth),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: _scrollable(
+                    maxHeight: panelMaxHeight,
+                    child: _buildControls(panelWidth),
+                  ),
+                ),
+                Positioned(
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  child: IgnorePointer(child: _buildStatusBar(stats)),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildStatsPanel(SessionStats stats) {
+  /// Constrains a panel's height and lets it scroll, so a small screen shows
+  /// all of the readout rather than clipping the bottom of it.
+  Widget _scrollable({required double maxHeight, required Widget child}) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight < 120 ? 120 : maxHeight),
+      child: SingleChildScrollView(child: child),
+    );
+  }
+
+  /// The live readout.
+  ///
+  /// This panel is wrapped in an [IgnorePointer] by its caller, because every
+  /// touch must reach the capture surface underneath: a scrollable panel here
+  /// would silently swallow the very events being measured. It therefore cannot
+  /// scroll, so on a small screen it shows fewer rows instead of clipping them.
+  /// The rows dropped in compact mode are the ones that do not change the
+  /// verdict.
+  Widget _buildStatsPanel(SessionStats stats, double width) {
+    final Divider divider = Divider(
+      color: Colors.white24,
+      height: _compact ? 10 : 18,
+    );
+
     return _panel(
-      width: 330,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const Text(
+          Text(
             'CAPTURE',
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 11,
+              fontSize: _compact ? 9 : 11,
               letterSpacing: 2,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          _row('Session', '${_recorder.sessionId}  (${_recorder.label})'),
+          SizedBox(height: _compact ? 4 : 8),
+          if (_compact == false)
+            _row('Session', '${_recorder.sessionId}  (${_recorder.label})'),
           _row('Events', '${stats.totalEvents}'),
           _row('Downs / Ups', '${stats.downCount} / ${stats.upCount}'),
-          _row('Moves', '${stats.moveCount}'),
-          _row('Cancels', '${stats.cancelCount}'),
+          if (_compact == false) _row('Moves', '${stats.moveCount}'),
+          if (_compact == false) _row('Cancels', '${stats.cancelCount}'),
           _row('Max concurrent', '${stats.maxConcurrentPointers}'),
-          const Divider(color: Colors.white24, height: 18),
-          _row('radiusMajor min', stats.radiusMajorMin.toStringAsFixed(2)),
-          _row('radiusMajor max', stats.radiusMajorMax.toStringAsFixed(2)),
-          _row('radiusMajor mean', stats.radiusMajorMean.toStringAsFixed(2)),
-          _row(
-            'pressure',
-            '${stats.pressureMin.toStringAsFixed(2)} - '
-                '${stats.pressureMax.toStringAsFixed(2)}',
-          ),
+          divider,
+          _row('radius min', stats.radiusMajorMin.toStringAsFixed(2)),
+          _row('radius max', stats.radiusMajorMax.toStringAsFixed(2)),
+          _row('radius mean', stats.radiusMajorMean.toStringAsFixed(2)),
+          if (_compact == false)
+            _row(
+              'pressure',
+              '${stats.pressureMin.toStringAsFixed(2)} - '
+                  '${stats.pressureMax.toStringAsFixed(2)}',
+            ),
           _row(
             'size',
             '${stats.sizeMin.toStringAsFixed(3)} - '
                 '${stats.sizeMax.toStringAsFixed(3)}',
           ),
-          const Divider(color: Colors.white24, height: 18),
+          divider,
           _row(
             'Device',
-            '${_metrics.deviceManufacturer} ${_metrics.deviceModel}',
+            _compact
+                ? _metrics.deviceModel
+                : '${_metrics.deviceManufacturer} ${_metrics.deviceModel}',
           ),
           _row(
-            'xdpi / ydpi',
+            _compact ? 'dpi' : 'xdpi / ydpi',
             '${_metrics.xdpi.toStringAsFixed(1)} / ${_metrics.ydpi.toStringAsFixed(1)}',
           ),
-          _row(
-            'Screen px',
-            '${_metrics.widthPixels} x ${_metrics.heightPixels}',
-          ),
+          if (_compact == false)
+            _row(
+              'Screen px',
+              '${_metrics.widthPixels} x ${_metrics.heightPixels}',
+            ),
           _row(
             'Screen mm',
             '${_metrics.widthMillimetres.toStringAsFixed(0)} x '
                 '${_metrics.heightMillimetres.toStringAsFixed(0)}',
           ),
-          _row(
-            'devicePixelRatio',
-            MediaQuery.of(context).devicePixelRatio.toStringAsFixed(2),
-          ),
+          if (_compact == false)
+            _row(
+              'devicePixelRatio',
+              MediaQuery.of(context).devicePixelRatio.toStringAsFixed(2),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildControls() {
+  Widget _buildControls(double width) {
     return _panel(
-      width: 260,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -464,14 +525,19 @@ class _CaptureScreenState extends State<CaptureScreen> {
             stats.verdict,
             style: TextStyle(
               color: verdictColour,
-              fontSize: 15,
+              fontSize: _compact ? 12 : 15,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: _compact ? 3 : 6),
           Text(
             _statusMessage,
-            style: const TextStyle(color: Colors.white60, fontSize: 12),
+            maxLines: _compact ? 2 : 4,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: _compact ? 10 : 12,
+            ),
           ),
           if (stats.downToDownGapsMillis.isNotEmpty)
             Padding(
@@ -523,7 +589,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Widget _panel({required Widget child, double? width}) {
     return Container(
       width: width,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(_compact ? 8 : 12),
       decoration: BoxDecoration(
         color: const Color(0xCC161B21),
         borderRadius: BorderRadius.circular(10),
@@ -534,24 +600,26 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Widget _row(String label, String value) {
+    final double fontSize = _compact ? 10 : 12;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      padding: EdgeInsets.symmetric(vertical: _compact ? 0.5 : 1.5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 130,
+            width: _compact ? 96 : 130,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: Colors.white54, fontSize: fontSize),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: fontSize,
                 fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
               ),
             ),
