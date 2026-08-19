@@ -1,4 +1,4 @@
-package dev.kylesvoice.kylesvoice
+package io.github.pkellyuk.kylesvoice
 
 import io.flutter.embedding.android.FlutterActivity
 

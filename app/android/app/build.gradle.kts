@@ -1,11 +1,32 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Upload signing credentials, kept out of the repository.
+//
+// A release build needs android/key.properties, which is deliberately not
+// committed: it names a keystore and holds its passwords. See
+// android/key.properties.example and docs/RELEASING.md.
+//
+// Without it, release builds still work but are signed with the debug key, so
+// they run on a device and cannot be uploaded to Play. That is the right
+// failure: a contributor cloning this repo should be able to build and run
+// without needing Paul's signing key.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+val hasUploadKey = keystorePropertiesFile.exists()
+
+if (hasUploadKey) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "dev.kylesvoice.kylesvoice"
+    namespace = "io.github.pkellyuk.kylesvoice"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +37,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.kylesvoice.kylesvoice"
+        applicationId = "io.github.pkellyuk.kylesvoice"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -29,11 +50,35 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasUploadKey) {
+                signingConfigs.getByName("upload")
+            } else {
+                // No upload key present: sign with the debug key so the build
+                // still runs on a device. It cannot be uploaded to Play, which
+                // is exactly what should happen.
+                signingConfigs.getByName("debug")
+            }
+
+            // Shrink and obfuscate. Flutter's own rules keep the engine intact.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

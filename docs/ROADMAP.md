@@ -14,6 +14,21 @@ Apple Developer Program fee and the macOS build dependency.
 
 ---
 
+## Play Store readiness
+
+- [x] Application ID fixed as `io.github.pkellyuk.kylesvoice`. **Permanent.**
+- [x] Launcher label, app icon, release signing config, ProGuard rules.
+- [x] `targetSdk 36`, meeting Play's 31 August 2026 requirement.
+- [x] Release build declares **no Android permissions**, so the Data safety
+      declaration is "no data collected" and is true.
+- [x] Privacy policy, store listing copy, data safety answers, release guide.
+- [ ] Generate and back up the upload keystore (`docs/RELEASING.md`).
+- [ ] Enable GitHub Pages so the privacy policy URL resolves.
+- [ ] Feature graphic (1024x500) and screenshots.
+- [ ] Upload to the internal testing track first, never straight to production.
+
+---
+
 ## Phase 0 — Decisions and de-risking, before app code
 
 - [x] Stack: Flutter, Android-first, pure-Dart core package.
@@ -126,8 +141,9 @@ Goal: useful to the rest of the SLT team's caseload, not just Kyle.
       - Amazon Appstore — reaches stock Fire tablets, which is what other
         families in the SLT team's caseload will have.
       - Google Play — reaches ordinary Android devices and Kyle's tablet, which
-        has Play sideloaded. Requires privacy policy, Data Safety declaration,
-        Families policy compliance and a content rating.
+        has Play sideloaded. Developer account registered. Build side is ready:
+        see `RELEASING.md` and `PLAY-LISTING.md`. Outstanding: upload keystore,
+        GitHub Pages for the privacy policy, feature graphic and screenshots.
       - F-Droid — natural home for a GPL-3.0 app with no proprietary
         dependencies, and reaches users who avoid app stores entirely.
 - [ ] Verify the app runs on stock Fire OS with no Google Play Services present.

@@ -10,10 +10,15 @@ pubspec.lock
 # Android
 .gradle/
 local.properties
+captures/
+
+# Signing credentials. Never commit these: key.properties names a keystore and
+# holds its passwords, and the keystore itself is what proves a build came from
+# us. See docs/RELEASING.md.
 key.properties
+**/key.properties
 *.jks
 *.keystore
-captures/
 
 # IDE
 .idea/

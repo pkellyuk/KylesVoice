@@ -19,6 +19,10 @@ Pre-development. Design and planning only. See [`docs/DESIGN.md`](docs/DESIGN.md
 | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) | Board set / page / cell / card schema and interchange format |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phased delivery plan |
 | [`docs/FOR-CLINICIANS.md`](docs/FOR-CLINICIANS.md) | Plain-language summary for speech and language therapists |
+| [`docs/RELEASING.md`](docs/RELEASING.md) | How to sign and build for Google Play |
+| [`docs/PLAY-LISTING.md`](docs/PLAY-LISTING.md) | Store listing copy, data safety answers, release checklist |
+| [`docs/privacy-policy.md`](docs/privacy-policy.md) | Privacy policy |
+| [`THIRD-PARTY-ASSETS.md`](THIRD-PARTY-ASSETS.md) | Symbol set licensing and attribution |
 
 ## For speech and language therapists
 
