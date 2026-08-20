@@ -112,8 +112,18 @@ Play asks these directly. The honest answers are the simple ones.
 
 **Supporting facts, should Play query it:**
 
-- The release manifest declares **no permissions whatsoever**. Verifiable with
-  `aapt2 dump permissions` on the uploaded bundle.
+- The release manifest requests **no Android platform permission at all** — in
+  particular no `INTERNET`, so the app has no means of transmitting anything.
+  The manifest does contain one `uses-permission` line, for
+  `io.github.pkellyuk.kylesvoice.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+  That is a permission the app defines on itself at `protectionLevel="signature"`,
+  added automatically by AndroidX Core so that an app's own dynamic broadcast
+  receivers cannot be reached by other apps. It grants the app nothing, is never
+  shown to a user, and has no bearing on Data safety.
+  (`android.permission.DUMP` also appears, but as the guard *on* AndroidX's
+  ProfileInstallReceiver — the app demands it of callers rather than holding it.)
+  Verifiable on the merged manifest, or with `aapt2 dump permissions` on the
+  uploaded bundle.
 - No analytics, advertising, crash-reporting or attribution SDK is present. The
   full dependency list is four packages: `flutter_tts`, `image_picker`,
   `path_provider`, `flutter_svg`, plus `flutter_svg`'s own dependencies.
@@ -220,11 +230,11 @@ python3 tools/pad_screenshots.py shot-phone-1-board=shot.png
 ## Release checklist
 
 - [x] GitHub Pages enabled and the privacy policy URL resolving
-- [ ] Upload keystore generated and **backed up somewhere that is not this
-      machine** (see `RELEASING.md`)
-- [ ] `android/key.properties` created locally, not committed
-- [ ] `flutter build appbundle --release` produces a bundle signed with the
-      upload key
+- [x] Upload keystore generated (backing it up somewhere that is not this
+      machine remains yours to do — see `RELEASING.md`)
+- [x] `android/key.properties` created locally, not committed
+- [x] `flutter build appbundle --release` produces a bundle signed with the
+      upload key (verified: owner `CN=Paul Kelly`, not `CN=Android Debug`)
 - [x] Feature graphic and tablet screenshots produced
 - [x] Phone screenshots produced
 - [ ] Data safety, content rating and target audience forms completed

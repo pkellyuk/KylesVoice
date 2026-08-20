@@ -122,9 +122,14 @@ aapt2 dump permissions app\build\app\outputs\flutter-apk\app-release.apk
 :: Should list the package and nothing else of substance
 ```
 
-At the time of writing the release build declares **no Android permissions at
-all**. If that ever changes, the privacy policy and the Data safety declaration
-must change with it, in the same commit.
+The release build requests **no Android platform permission at all**, and
+notably no `INTERNET`. The only `uses-permission` line is the app's own
+`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, which AndroidX Core defines at
+signature level to keep an app's dynamic receivers private to itself; it grants
+nothing and is not shown to users.
+
+If a real permission ever appears, the privacy policy and the Data safety
+declaration must change with it, in the same commit.
 
 ## Fire tablets
 
