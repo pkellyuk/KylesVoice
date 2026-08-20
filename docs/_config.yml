@@ -1,0 +1,12 @@
+# GitHub Pages configuration.
+#
+# Pages exists for one reason: Google Play requires a publicly reachable
+# privacy policy URL. Everything else here is project documentation that
+# happens to render nicely alongside it.
+title: Kyle's Voice
+description: A free, open-source picture-card communication app with speech output.
+theme: jekyll-theme-minimal
+
+# Capture data is research material, not a web page.
+exclude:
+  - captures

@@ -1,3 +1,8 @@
+---
+layout: default
+title: Privacy policy — Kyle's Voice
+---
+
 # Privacy policy — Kyle's Voice
 
 **Last updated:** 19 August 2026

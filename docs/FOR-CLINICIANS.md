@@ -1,3 +1,8 @@
+---
+layout: default
+title: For clinicians — Kyle's Voice
+---
+
 # Kyle's Voice — Notes for Speech and Language Therapists
 
 A plain-language summary of what this app is and the clinical assumptions built
