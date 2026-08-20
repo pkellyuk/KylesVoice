@@ -9,7 +9,7 @@ it. Character limits are Play's own.
 
 | Field | Value |
 |---|---|
-| **App name** (30 max) | `Kyle's Voice — Free AAC` |
+| **App name** (30 max) | `Kyle's Voice — AAC` — **not** "Free AAC", see below |
 | **Launcher label** | `Kyle's Voice` (set in the manifest; the store title can be longer than what fits under an icon) |
 | **Application ID** | `io.github.pkellyuk.kylesvoice` — **permanent, cannot be changed after the first release** |
 | **Default language** | English (United Kingdom) |
@@ -21,10 +21,26 @@ it. Character limits are Play's own.
 ## Short description (80 max)
 
 ```
-Free picture cards that speak. Built for a non-verbal child. No ads, ever.
+Picture cards that speak. Built for a non-verbal child, shared for anyone.
 ```
 
 *(74 characters.)*
+
+### Why the word "free" is not in the name or the short description
+
+Play's metadata policy forbids keywords indicating price or promotion in the
+app title, and the Console flags them. `Kyle's Voice — Free AAC` was rejected by
+that check with "App name: Should not use keywords that indicate price or
+promotion", and the original short description drew the softer warning that the
+app "may not be promoted on Google Play" for the same reason.
+
+This is galling, because being free is the entire point and the least
+promotional claim imaginable. But the rule does not distinguish between a
+genuine statement and a marketing shout, and arguing costs a review cycle.
+
+The word survives where it matters and is not flagged: the full description
+says so plainly, the licence says so, and the privacy policy says so. A parent
+who opens the listing still learns it in the first line.
 
 ## Full description (4000 max)
 
