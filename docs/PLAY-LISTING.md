@@ -240,6 +240,45 @@ adb -s <device> exec-out screencap -p > shot.png
 python3 tools/pad_screenshots.py shot-phone-1-board=shot.png
 ```
 
+## The closed-testing gate before production
+
+Personal developer accounts cannot publish straight to production. The Console
+states the requirement plainly:
+
+> - Publish a closed testing release
+> - Have at least 12 testers opted-in to your closed test
+> - Run your closed test with at least 12 testers, for at least 14 days
+
+Only then does **Apply for production** stop being greyed out, and the
+application itself is then reviewed. So the earliest a public listing can exist
+is a fortnight after the twelfth tester opts in — the clock starts on the
+twelfth, not the first.
+
+**Internal testing does not count towards this.** The requirement names *closed*
+testing specifically. Internal testing is still the right way to get a build
+onto Kyle's tablet today, and it works immediately, but it contributes nothing
+to the fourteen days. The closed track has to be set up separately, with the
+same people added to it.
+
+### On finding twelve people
+
+They need Google accounts, they need to actually opt in, and they need to *stay*
+opted in for the fortnight — someone who joins and then uninstalls can set the
+count back.
+
+Speech and language therapy teams, family, and other families in the same
+position are the natural candidates, and are also the people whose feedback is
+worth having. Be wary of tester-exchange groups that trade opt-ins between
+strangers: Google has acted against them, and this is an app whose entire
+argument is that it is honest about what it does. Twelve real people who might
+actually use it is a better test anyway.
+
+### If the fortnight is inconvenient
+
+Nothing about this blocks the app reaching anyone who needs it. The source is
+public under GPL-3.0, and an APK attached to a GitHub release installs on any
+Android or Fire device without Play being involved at all. See `ROADMAP.md`.
+
 ## Release checklist
 
 - [x] GitHub Pages enabled and the privacy policy URL resolving
@@ -251,5 +290,8 @@ python3 tools/pad_screenshots.py shot-phone-1-board=shot.png
 - [x] Feature graphic and tablet screenshots produced
 - [x] Phone screenshots produced
 - [ ] Data safety, content rating and target audience forms completed
-- [ ] Internal testing track used first, on Paul's own devices, before any
-      production release
+- [x] Internal testing track live (release 1 (1.0.0), 20 August 2026)
+- [ ] App used on Kyle's own tablet through the Play internal-testing flow
+- [ ] Closed testing track created
+- [ ] 12 testers opted in to closed testing
+- [ ] Closed test run for 14 days, then apply for production
