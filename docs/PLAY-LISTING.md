@@ -295,6 +295,18 @@ Nothing about this blocks the app reaching anyone who needs it. The source is
 public under GPL-3.0, and an APK attached to a GitHub release installs on any
 Android or Fire device without Play being involved at all. See `ROADMAP.md`.
 
+### Kyle's tablet is on the Play build, not a sideload
+
+It installed from Google Play through the closed-testing opt-in link, because
+the tablet is signed in to the developer's own Google account and that account
+is on the tester list.
+
+**Do not sideload an APK onto that tablet.** A Play install is signed by Play
+App Signing; a locally built APK is signed with the upload key. Android will not
+upgrade between them, so installing one over the other means uninstalling first,
+and uninstalling takes his board and photographs with it — there is no export
+yet. He is on the route that receives updates automatically; leave him on it.
+
 ## Release checklist
 
 - [x] GitHub Pages enabled and the privacy policy URL resolving
@@ -307,7 +319,8 @@ Android or Fire device without Play being involved at all. See `ROADMAP.md`.
 - [x] Phone screenshots produced
 - [ ] Data safety, content rating and target audience forms completed
 - [x] Internal testing track live (release 1 (1.0.0), 20 August 2026)
-- [ ] App used on Kyle's own tablet through the Play internal-testing flow
-- [ ] Closed testing track created
+- [x] App installed on Kyle's own tablet from Google Play, 20 August 2026,
+      via the closed-testing track — the milestone this project existed for
+- [x] Closed testing track created and submitted for review
 - [ ] 12 testers opted in to closed testing
 - [ ] Closed test run for 14 days, then apply for production
