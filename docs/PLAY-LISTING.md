@@ -151,6 +151,19 @@ Complete the IARC questionnaire. Truthful answers for this app:
 - No advertising.
 - Does the app share the user's location? **No.**
 - Does the app allow users to interact or exchange information? **No.**
+- Is the app primarily a news or educational product? **No.**
+
+The last one is worth explaining, because it looks arguable. IARC asks it to
+decide whether otherwise-ratable content should be read in a news or teaching
+context — a news report on a drug raid is not rated like the same thing shown
+for entertainment. Kyle's Voice carries no news, and it is not an educational
+product: it does not teach, it lets someone speak. The only content in it is
+whatever words a parent put on the cards. Nothing in the app needs
+contextualising, so answering yes would buy nothing and invite a reviewer to
+ask what, exactly, it teaches.
+
+This is a different field from the store **category**, where Education remains a
+defensible choice.
 
 Expected outcome: rated suitable for all ages in every region.
 
