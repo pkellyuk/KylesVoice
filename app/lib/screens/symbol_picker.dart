@@ -20,6 +20,16 @@ class SymbolPicker extends StatefulWidget {
   State<SymbolPicker> createState() => _SymbolPickerState();
 }
 
+/// Height of the horizontal category strip.
+const double _categoryStripHeight = 44;
+
+/// Below this much body height the category strip is dropped.
+///
+/// The search field occupies about 84 logical pixels including its padding.
+/// Add the strip and a row of results still worth looking at, and the strip
+/// only earns its place on a viewport this tall.
+const double _minHeightForStrip = 200;
+
 class _SymbolPickerState extends State<SymbolPicker> {
   late final TextEditingController _query;
 
@@ -115,13 +125,34 @@ class _SymbolPickerState extends State<SymbolPicker> {
       ),
       body: SymbolLibrary.isLoaded == false
           ? _buildUnavailable()
-          : Column(
-              children: <Widget>[
-                _buildSearchField(),
-                _buildCategoryStrip(),
-                Expanded(child: _buildResults()),
-              ],
-            ),
+          : LayoutBuilder(builder: _buildBody),
+    );
+  }
+
+  /// The picker proper, laid out against the height actually available.
+  ///
+  /// On a phone in landscape the keyboard takes most of the screen: roughly
+  /// 100 logical pixels are left below the app bar, which is less than the
+  /// search field and the category strip need together. Laying both out
+  /// unconditionally overflowed the column by 29 pixels on a Pixel 6.
+  ///
+  /// The strip is the part that gives way. It is a browsing aid, and nobody is
+  /// browsing categories while the keyboard is up — they are typing a word.
+  /// Dismissing the keyboard brings it straight back.
+  Widget _buildBody(BuildContext context, BoxConstraints constraints) {
+    if (constraints.maxHeight <= 0) {
+      Log.hot('_SymbolPickerState._buildBody', 'no height');
+      return const SizedBox.shrink();
+    }
+
+    final bool roomForStrip = constraints.maxHeight >= _minHeightForStrip;
+
+    return Column(
+      children: <Widget>[
+        _buildSearchField(),
+        if (roomForStrip) _buildCategoryStrip(),
+        Expanded(child: _buildResults()),
+      ],
     );
   }
 
@@ -194,7 +225,7 @@ class _SymbolPickerState extends State<SymbolPicker> {
     }
 
     return SizedBox(
-      height: 44,
+      height: _categoryStripHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

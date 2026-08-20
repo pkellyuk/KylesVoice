@@ -170,7 +170,7 @@ Play requires, at minimum:
 | App icon | 512 x 512 PNG | `docs/store/icon-512.png` |
 | Feature graphic | 1024 x 500 | `docs/store/feature-graphic-1024x500.png` |
 | Tablet screenshots | 2-8 | Six, at 2560 x 1600, in `docs/store/` |
-| **Phone screenshots** | 2-8 | **Still needed** — see below |
+| Phone screenshots | 2-8 | Six, at 2400 x 1263, in `docs/store/` |
 
 The six tablet screenshots, in the order worth uploading them:
 
@@ -187,30 +187,46 @@ All are generated reproducibly: `tools/make_demo_board.py` builds the demo
 vocabulary, and the images come from the tablet emulator. No real photograph of
 a child appears in any of them.
 
-### Phone screenshots are still outstanding
+### Phone screenshots
 
-Play asks for phone screenshots separately from tablet ones, and the app will be
-available on phones. The app is landscape-locked, so phone screenshots are
-landscape too. Capture them the same way, from a phone or a phone-sized
-emulator:
+Play asks for phone screenshots separately from tablet ones, and the app is
+available on phones. The app is landscape-locked, so these are landscape too.
+
+| File | Shows |
+|---|---|
+| `shot-phone-1-board.png` | The board itself |
+| `shot-phone-2-symbols.png` | The symbol picker mid-search |
+| `shot-phone-3-card-editor.png` | The card editor: photograph and symbol together |
+| `shot-phone-4-editor.png` | The board editor with an empty cell waiting |
+| `shot-phone-5-pages.png` | Page two, showing the paging arrows |
+| `shot-phone-6-parent-gate.png` | The grown-up check |
+
+Captured from a Pixel 6 emulator (`kv_phone_api33`) running a debug build with
+the demo board pushed onto it, exactly as the tablet shots were.
+
+**They are padded, and they have to be.** Play rejects a screenshot whose long
+edge is more than twice its short edge. A Pixel 6 in landscape is 2400 x 1080,
+which is 2.22:1, so a screenshot straight off the device is refused even though
+it is precisely what the user sees. `tools/pad_screenshots.py` pads the short
+edge with the app's own background colour — no cropping, nothing hidden — to
+2400 x 1263, or 1.9:1. It also converts to 24-bit RGB, which Play requires and
+`screencap` does not produce.
 
 ```bat
-adb -s <device> exec-out screencap -p > shot-phone-1.png
+adb -s <device> exec-out screencap -p > shot.png
+python3 tools/pad_screenshots.py shot-phone-1-board=shot.png
 ```
-
-The alternative is to restrict the listing to tablets only, which would keep
-the app off the rugged phones — so it is worth doing properly.
 
 ## Release checklist
 
-- [ ] GitHub Pages enabled and the privacy policy URL resolving
+- [x] GitHub Pages enabled and the privacy policy URL resolving
 - [ ] Upload keystore generated and **backed up somewhere that is not this
       machine** (see `RELEASING.md`)
 - [ ] `android/key.properties` created locally, not committed
 - [ ] `flutter build appbundle --release` produces a bundle signed with the
       upload key
 - [x] Feature graphic and tablet screenshots produced
-- [ ] Phone screenshots produced
+- [x] Phone screenshots produced
 - [ ] Data safety, content rating and target audience forms completed
 - [ ] Internal testing track used first, on Paul's own devices, before any
       production release

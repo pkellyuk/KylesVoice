@@ -7,7 +7,8 @@ hand so it can be regenerated when the app changes.
 |---|---|---|
 | `icon-512.png` | Play Store listing icon | `tools/generate_icon.py` |
 | `feature-graphic-1024x500.png` | Play Store feature graphic | `tools/generate_feature_graphic.py` |
-| `shot-*.png` | Tablet screenshots, 2560 x 1600 | Captured from the tablet emulator |
+| `shot-[0-9]-*.png` | Tablet screenshots, 2560 x 1600 | Captured from the tablet emulator (`kv_tablet_api33`) |
+| `shot-phone-*.png` | Phone screenshots, 2400 x 1263 | Captured from the phone emulator (`kv_phone_api33`), then `tools/pad_screenshots.py` |
 
 The launcher icons under `app/android/app/src/main/res/mipmap-*` come from the
 same icon script.
@@ -18,6 +19,10 @@ same icon script.
 python3 tools/generate_icon.py
 python3 tools/generate_feature_graphic.py
 ```
+
+Phone screenshots are padded rather than cropped: Play refuses a screenshot
+whose long edge is more than twice its short edge, and a phone in landscape is
+wider than that. See `docs/PLAY-LISTING.md`.
 
 ## Retaking the screenshots
 
